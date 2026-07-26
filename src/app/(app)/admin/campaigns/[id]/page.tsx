@@ -6,6 +6,7 @@ import { requireProfile } from "@/lib/auth/current-profile";
 import { Badge } from "@/components/ui/badge";
 import { AddLeadDialog } from "./add-lead-dialog";
 import { LeadRowActions } from "./lead-row-actions";
+import { AutoAssignButton } from "./auto-assign-button";
 
 const SCREENING_BADGE: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
   passed: "confirm",
@@ -25,15 +26,16 @@ export default async function CampaignDetailPage({
   if (!["super_admin", "ops_manager"].includes(profile.role)) redirect("/");
 
   const supabase = await createClient();
-  const [{ data: campaign }, { data: leads }, { data: dataSources }] = await Promise.all([
+  const [{ data: campaign }, { data: leads }, { data: dataSources }, { data: agents }] = await Promise.all([
     supabase.from("campaigns").select("*, clients(name)").eq("id", id).single(),
     supabase
       .from("leads")
-      .select("*")
+      .select("*, profiles(full_name)")
       .eq("campaign_id", id)
       .order("created_at", { ascending: false })
       .limit(200),
     supabase.from("data_sources").select("*").eq("is_active", true).order("name"),
+    supabase.from("campaign_assignments").select("user_id, profiles(full_name)").eq("campaign_id", id),
   ]);
 
   if (!campaign) notFound();
@@ -54,10 +56,14 @@ export default async function CampaignDetailPage({
             <Badge variant="blue">{campaign.market}</Badge>
           </h2>
           <p className="tabular text-xs text-muted">
-            {campaign.code} · {(campaign as { clients?: { name: string } | null }).clients?.name}
+            {campaign.code} · {(campaign as { clients?: { name: string } | null }).clients?.name} ·{" "}
+            {(agents ?? []).length} agents assigned
           </p>
         </div>
-        <AddLeadDialog campaignId={campaign.id} dataSources={dataSources ?? []} />
+        <div className="flex items-center gap-2">
+          <AutoAssignButton campaignId={campaign.id} />
+          <AddLeadDialog campaignId={campaign.id} dataSources={dataSources ?? []} />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-line bg-white">
@@ -67,6 +73,7 @@ export default async function CampaignDetailPage({
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Phone</th>
               <th className="px-3 py-2 font-medium">Location</th>
+              <th className="px-3 py-2 font-medium">Assigned to</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium">Screening</th>
               <th className="px-3 py-2 font-medium">Attempts</th>
@@ -82,6 +89,11 @@ export default async function CampaignDetailPage({
                 <td className="px-3 py-1.5 tabular">{l.phone_e164}</td>
                 <td className="px-3 py-1.5 text-muted">
                   {[l.city, l.region].filter(Boolean).join(", ") || "—"}
+                </td>
+                <td className="px-3 py-1.5 text-muted">
+                  {(l as { profiles?: { full_name: string } | null }).profiles?.full_name ?? (
+                    <span className="text-warning">Unassigned</span>
+                  )}
                 </td>
                 <td className="px-3 py-1.5">
                   {l.do_not_call ? (
@@ -99,13 +111,22 @@ export default async function CampaignDetailPage({
                   {l.attempt_count} / {campaign.max_attempts}
                 </td>
                 <td className="px-3 py-1.5 text-right">
-                  <LeadRowActions leadId={l.id} screeningStatus={l.screening_status} doNotCall={l.do_not_call} />
+                  <LeadRowActions
+                    leadId={l.id}
+                    screeningStatus={l.screening_status}
+                    doNotCall={l.do_not_call}
+                    assignedTo={l.assigned_to}
+                    agents={(agents ?? []).map((a) => ({
+                      id: a.user_id,
+                      name: (a as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
+                    }))}
+                  />
                 </td>
               </tr>
             ))}
             {(leads ?? []).length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted">
+                <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">
                   No leads yet. Add one, or wait for the bulk import wizard (Phase 7).
                 </td>
               </tr>
@@ -116,8 +137,8 @@ export default async function CampaignDetailPage({
 
       <p className="mt-3 text-[11px] text-muted">
         Every lead here passed the internal suppression check at entry. Screening still needs to
-        be marked passed before a lead becomes dialable — use the row action, or wait for a real
-        TPS/CTPS/DNC bureau run (Phase 8).
+        be marked passed, then assigned to an agent (individually or via Auto-assign), before it
+        becomes dialable in that agent&rsquo;s workspace.
       </p>
     </div>
   );

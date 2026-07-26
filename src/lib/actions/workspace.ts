@@ -1,0 +1,133 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+export interface WorkspaceLead {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  phone_e164: string;
+  city: string | null;
+  region: string | null;
+  screened_at: string | null;
+  attempt_count: number;
+  next_action_at: string | null;
+  lead_local_time: string | null;
+}
+
+export interface WorkspaceDisposition {
+  id: string;
+  code: string;
+  label: string;
+  sets_dnc: boolean;
+  requires_note: boolean;
+  requires_followup: boolean;
+}
+
+export interface QueueCounts {
+  due_now: number;
+  fresh: number;
+  total: number;
+}
+
+export async function getAssignedCampaigns() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("campaign_assignments")
+    .select(
+      "campaigns(id, code, name, market, max_attempts, script_md, objection_handling_md, opening_disclosure)",
+    )
+    .eq("user_id", user.id);
+
+  return (data ?? [])
+    .map(
+      (row) =>
+        (
+          row as unknown as {
+            campaigns: {
+              id: string;
+              code: string;
+              name: string;
+              market: string;
+              max_attempts: number;
+              script_md: string | null;
+              objection_handling_md: string | null;
+              opening_disclosure: string | null;
+            };
+          }
+        ).campaigns,
+    )
+    .filter(Boolean);
+}
+
+export async function getQueueCounts(campaignId: string): Promise<QueueCounts> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("v_dialable_leads")
+    .select("next_action_at")
+    .eq("campaign_id", campaignId);
+
+  const rows = data ?? [];
+  const dueNow = rows.filter((r) => r.next_action_at !== null).length;
+  return { due_now: dueNow, fresh: rows.length - dueNow, total: rows.length };
+}
+
+export async function getNextLead(campaignId: string): Promise<WorkspaceLead | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("v_dialable_leads")
+    .select(
+      "id, first_name, last_name, company_name, phone_e164, city, region, screened_at, attempt_count, next_action_at, lead_local_time",
+    )
+    .eq("campaign_id", campaignId)
+    .order("next_action_at", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return data as WorkspaceLead | null;
+}
+
+export async function getDispositions(campaignId: string): Promise<WorkspaceDisposition[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("dispositions")
+    .select("id, code, label, sets_dnc, requires_note, requires_followup, campaign_id, sort_order")
+    .or(`campaign_id.is.null,campaign_id.eq.${campaignId}`)
+    .order("sort_order");
+
+  return (data ?? []) as WorkspaceDisposition[];
+}
+
+export interface SubmitCallResult {
+  error?: string;
+  ok?: boolean;
+  suppressed?: boolean;
+}
+
+export async function submitCallAttempt(params: {
+  leadId: string;
+  dispositionCode: string;
+  notes: string;
+  wrapSeconds: number;
+  callbackAt: string | null;
+}): Promise<SubmitCallResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("record_call_attempt", {
+    p_lead_id: params.leadId,
+    p_disposition_code: params.dispositionCode,
+    p_notes: params.notes || undefined,
+    p_wrap_seconds: params.wrapSeconds,
+    p_next_action_at: params.callbackAt ?? undefined,
+  });
+
+  if (error) return { error: error.message };
+  return { ok: true, suppressed: params.dispositionCode === "connected_dnc" };
+}

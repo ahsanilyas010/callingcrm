@@ -1126,7 +1126,18 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       is_manager: { Args: never; Returns: boolean }
+      my_team_id: { Args: never; Returns: string }
       my_team_members: { Args: never; Returns: string[] }
+      record_call_attempt: {
+        Args: {
+          p_disposition_code: string
+          p_lead_id: string
+          p_next_action_at?: string
+          p_notes?: string
+          p_wrap_seconds?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
