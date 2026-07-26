@@ -113,6 +113,7 @@ export interface SubmitCallResult {
 
 export async function submitCallAttempt(params: {
   leadId: string;
+  campaignId: string;
   dispositionCode: string;
   notes: string;
   wrapSeconds: number;
@@ -129,5 +130,24 @@ export async function submitCallAttempt(params: {
   });
 
   if (error) return { error: error.message };
+
+  if (params.callbackAt) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("followups").insert({
+        lead_id: params.leadId,
+        campaign_id: params.campaignId,
+        assigned_to: user.id,
+        created_by: user.id,
+        followup_type: "callback",
+        due_at: params.callbackAt,
+        due_at_lead_local: params.callbackAt,
+        note: params.notes || null,
+      });
+    }
+  }
+
   return { ok: true, suppressed: params.dispositionCode === "connected_dnc" };
 }

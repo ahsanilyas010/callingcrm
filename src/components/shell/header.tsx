@@ -17,8 +17,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AttendanceControl } from "@/components/shell/attendance-control";
+import { FollowupTray } from "@/components/shell/followup-tray";
 import type { Profile } from "@/lib/auth/current-profile";
 import type { CurrentSession } from "@/lib/actions/attendance";
+import type { FollowupRow } from "@/lib/actions/followups";
 
 const ROLE_LABEL: Record<string, string> = {
   super_admin: "Super admin",
@@ -62,9 +64,11 @@ function useTitle() {
 export function Header({
   profile,
   initialSession,
+  initialFollowups,
 }: {
   profile: Profile;
   initialSession: CurrentSession | null;
+  initialFollowups: FollowupRow[];
 }) {
   const title = useTitle();
   const [now, setNow] = useState<Date | null>(null);
@@ -84,6 +88,10 @@ export function Header({
 
       <div className="flex items-center gap-4">
         <AttendanceControl initialSession={initialSession} />
+
+        <Separator orientation="vertical" className="h-5" />
+
+        <FollowupTray userId={profile.id} initial={initialFollowups} />
 
         <Separator orientation="vertical" className="h-5" />
 

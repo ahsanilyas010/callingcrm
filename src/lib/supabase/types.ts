@@ -668,6 +668,289 @@ export type Database = {
           },
         ]
       }
+      email_sends: {
+        Row: {
+          agent_id: string
+          body_sent_html: string
+          campaign_id: string
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          lead_id: string
+          opened_at: string | null
+          provider_error: string | null
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+          subject_sent: string
+          template_id: string | null
+          to_email: string
+        }
+        Insert: {
+          agent_id: string
+          body_sent_html: string
+          campaign_id: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          lead_id: string
+          opened_at?: string | null
+          provider_error?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject_sent: string
+          template_id?: string | null
+          to_email: string
+        }
+        Update: {
+          agent_id?: string
+          body_sent_html?: string
+          campaign_id?: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          lead_id?: string
+          opened_at?: string | null
+          provider_error?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject_sent?: string
+          template_id?: string | null
+          to_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_suppression: {
+        Row: {
+          created_at: string
+          email: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          body_html: string
+          body_text: string | null
+          campaign_id: string | null
+          created_at: string
+          from_email: string | null
+          from_name: string | null
+          id: string
+          is_active: boolean
+          merge_fields: string[] | null
+          name: string
+          reply_to: string | null
+          requires_approval: boolean
+          subject: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          body_html: string
+          body_text?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          merge_fields?: string[] | null
+          name: string
+          reply_to?: string | null
+          requires_approval?: boolean
+          subject: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          body_html?: string
+          body_text?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_active?: boolean
+          merge_fields?: string[] | null
+          name?: string
+          reply_to?: string | null
+          requires_approval?: boolean
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_templates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followups: {
+        Row: {
+          assigned_to: string
+          campaign_id: string
+          completed_at: string | null
+          completed_call_id: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          due_at_lead_local: string | null
+          escalated_at: string | null
+          followup_type: string
+          id: string
+          lead_id: string
+          note: string | null
+          priority: string
+          reminded_at: string | null
+          snooze_count: number
+          status: string
+        }
+        Insert: {
+          assigned_to: string
+          campaign_id: string
+          completed_at?: string | null
+          completed_call_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          due_at_lead_local?: string | null
+          escalated_at?: string | null
+          followup_type: string
+          id?: string
+          lead_id: string
+          note?: string | null
+          priority?: string
+          reminded_at?: string | null
+          snooze_count?: number
+          status?: string
+        }
+        Update: {
+          assigned_to?: string
+          campaign_id?: string
+          completed_at?: string | null
+          completed_call_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          due_at_lead_local?: string | null
+          escalated_at?: string | null
+          followup_type?: string
+          id?: string
+          lead_id?: string
+          note?: string | null
+          priority?: string
+          reminded_at?: string | null
+          snooze_count?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followups_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_completed_call_id_fkey"
+            columns: ["completed_call_id"]
+            isOneToOne: false
+            referencedRelation: "call_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           holiday_date: string
@@ -1459,6 +1742,35 @@ export type Database = {
         }
         Returns: string
       }
+      snooze_followup: {
+        Args: { p_followup_id: string }
+        Returns: {
+          assigned_to: string
+          campaign_id: string
+          completed_at: string | null
+          completed_call_id: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          due_at_lead_local: string | null
+          escalated_at: string | null
+          followup_type: string
+          id: string
+          lead_id: string
+          note: string | null
+          priority: string
+          reminded_at: string | null
+          snooze_count: number
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "followups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      sweep_followups: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:

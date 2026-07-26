@@ -137,6 +137,7 @@ export function Workspace({
     startTransition(async () => {
       const result = await submitCallAttempt({
         leadId: lead.id,
+        campaignId: campaign.id,
         dispositionCode: selected.code,
         notes,
         wrapSeconds,
