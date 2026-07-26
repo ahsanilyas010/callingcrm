@@ -1365,6 +1365,118 @@ export type Database = {
           },
         ]
       }
+      qa_reviews: {
+        Row: {
+          agent_acknowledged_at: string | null
+          agent_id: string
+          call_attempt_id: string
+          coaching_notes: string | null
+          created_at: string
+          fatal_breach: boolean
+          id: string
+          passed: boolean | null
+          reviewer_id: string
+          scorecard_id: string
+          scores: Json
+          total_score: number | null
+        }
+        Insert: {
+          agent_acknowledged_at?: string | null
+          agent_id: string
+          call_attempt_id: string
+          coaching_notes?: string | null
+          created_at?: string
+          fatal_breach?: boolean
+          id?: string
+          passed?: boolean | null
+          reviewer_id: string
+          scorecard_id: string
+          scores: Json
+          total_score?: number | null
+        }
+        Update: {
+          agent_acknowledged_at?: string | null
+          agent_id?: string
+          call_attempt_id?: string
+          coaching_notes?: string | null
+          created_at?: string
+          fatal_breach?: boolean
+          id?: string
+          passed?: boolean | null
+          reviewer_id?: string
+          scorecard_id?: string
+          scores?: Json
+          total_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_reviews_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_call_attempt_id_fkey"
+            columns: ["call_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "call_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_scorecard_id_fkey"
+            columns: ["scorecard_id"]
+            isOneToOne: false
+            referencedRelation: "qa_scorecards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_scorecards: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          criteria: Json
+          id: string
+          is_active: boolean
+          name: string
+          pass_threshold: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          criteria: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          pass_threshold?: number
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          criteria?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          pass_threshold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_scorecards_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_assignments: {
         Row: {
           created_at: string
@@ -1714,6 +1826,27 @@ export type Database = {
           },
         ]
       }
+      v_campaign_funnel: {
+        Row: {
+          campaign_id: string | null
+          contacted: number | null
+          converted: number | null
+          dialable: number | null
+          loaded: number | null
+          qualified: number | null
+          screened_passed: number | null
+          worked: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auth_role: {
@@ -1722,6 +1855,21 @@ export type Database = {
       }
       clock_in: { Args: { p_device?: string; p_ip?: unknown }; Returns: string }
       clock_out: { Args: { p_ip?: unknown }; Returns: string }
+      get_agent_scorecard: {
+        Args: { p_campaign_id?: string; p_from: string; p_to: string }
+        Returns: {
+          agent_id: string
+          avg_talk_seconds: number
+          avg_wrap_seconds: number
+          calls_attempted: number
+          campaign_id: string
+          connects: number
+          conversions: number
+          day: string
+          talk_seconds: number
+          unique_leads_touched: number
+        }[]
+      }
       is_manager: { Args: never; Returns: boolean }
       my_team_id: { Args: never; Returns: string }
       my_team_members: { Args: never; Returns: string[] }
@@ -1837,7 +1985,18 @@ export type Database = {
         | "vulnerable_person"
     }
     CompositeTypes: {
-      [_ in never]: never
+      agent_scorecard_row: {
+        agent_id: string | null
+        avg_talk_seconds: number | null
+        avg_wrap_seconds: number | null
+        calls_attempted: number | null
+        campaign_id: string | null
+        connects: number | null
+        conversions: number | null
+        day: string | null
+        talk_seconds: number | null
+        unique_leads_touched: number | null
+      }
     }
   }
 }

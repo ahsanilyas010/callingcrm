@@ -5,9 +5,29 @@ Router, strict TypeScript) + Supabase (Postgres, Auth, Storage, Realtime).
 
 This repo currently implements **Phase 1** (foundation: identity/org/
 campaigns, RLS, audit triggers, auth, the app shell), **Phase 2** (leads,
-suppression, the dialable-view compliance gate, manual lead entry), and the
-core of **Phase 3** (the agent dial workspace queue, atomic DNC transaction,
-lead assignment/auto-top-up) from the build spec.
+suppression, the dialable-view compliance gate, manual lead entry),
+**Phase 3** (the agent dial workspace queue, atomic DNC transaction, lead
+assignment/auto-top-up), **Phase 4** (attendance: clock in/out, aux states,
+shifts, leave requests, `pg_cron` sweeps), **Phase 5** (follow-ups with a
+live realtime tray, and the email module with suppression/unsubscribe), and
+**Phase 6** (QA scorecards/review queue, campaign funnel and agent
+scorecard reporting) from the build spec.
+
+> **Migrations 21-22 (`qa.sql`, `reporting.sql`) are written but not yet
+> applied to the live database.** The Supabase MCP connector started
+> rejecting `apply_migration`/`execute_sql` calls with "MCP tool call
+> requires approval" mid-build, and a direct `psql` connection using
+> `DATABASE_URL` is also blocked from this sandbox (DNS only resolves an
+> IPv6 address for the direct host, and the pooler times out — only HTTPS
+> egress works here). To keep the app building, `src/lib/supabase/types.ts`
+> was hand-extended to describe the two new tables (`qa_scorecards`,
+> `qa_reviews`), the `v_campaign_funnel` view, and the `get_agent_scorecard`
+> RPC/`agent_scorecard_row` type that migration 22 defines — **these do not
+> exist in the live database yet.** Before using `/qa` or
+> `/admin/performance`: apply `00000000000021_qa.sql` and
+> `00000000000022_reporting.sql` (Supabase dashboard SQL editor, the CLI, or
+> a working MCP connection), then regenerate types for real and diff away
+> the hand-written stopgap.
 
 ## Setup
 
@@ -90,11 +110,22 @@ The app currently renders a placeholder mark in the exact brand colours.
   unscreened leads never appear in the queue, suppressing a number removes
   it immediately, a booked callback disappears until due, and a "Do Not
   Call" disposition suppresses the number atomically.
+  Also real: attendance (clock in/out, aux-state tracking with no-overlap
+  enforcement, shift assignment, leave requests, the `pg_cron`
+  missed/escalation sweep for follow-ups), the follow-up due tray (live via
+  Supabase Realtime, with a snooze cap), and the email module (templates,
+  suppression-gated sends via a swappable `EmailProvider`, HMAC-signed
+  one-click unsubscribe).
+- Built but **pending migration application** (see the callout above): the
+  QA review queue (`/qa` — scorecard-driven, fatal-breach detection) and
+  the performance dashboard (`/admin/performance` — campaign funnel chart,
+  7-day agent leaderboard sorted by calls-attempted/contact-rate rather
+  than raw conversion, since verticals aren't comparable on that metric).
+  Both will 500 against the live database until migrations 21-22 are
+  applied.
 - Preview / not yet built: Live Floor shows real campaign/assignment
-  counts but no real-time call activity (that needs attendance/aux
-  states — Phase 4). Performance, Attendance, Data sourcing (the bulk
-  import wizard), and QA are placeholder screens pointing at the phase
-  that builds them for real.
+  counts but no real-time call activity feed. Data sourcing (the bulk
+  import wizard and external connectors) is Phase 7, not yet started.
 
 ## A real bug found and fixed along the way
 
