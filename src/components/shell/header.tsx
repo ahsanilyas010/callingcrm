@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, CalendarPlus } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
+import { RequestLeaveDialog } from "@/components/shell/request-leave-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { AttendanceControl } from "@/components/shell/attendance-control";
 import type { Profile } from "@/lib/auth/current-profile";
+import type { CurrentSession } from "@/lib/actions/attendance";
 
 const ROLE_LABEL: Record<string, string> = {
   super_admin: "Super admin",
@@ -55,9 +59,16 @@ function useTitle() {
   return TITLES[last] ?? "ABPO Command";
 }
 
-export function Header({ profile }: { profile: Profile }) {
+export function Header({
+  profile,
+  initialSession,
+}: {
+  profile: Profile;
+  initialSession: CurrentSession | null;
+}) {
   const title = useTitle();
   const [now, setNow] = useState<Date | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   useEffect(() => {
     setNow(new Date());
@@ -72,6 +83,10 @@ export function Header({ profile }: { profile: Profile }) {
       </div>
 
       <div className="flex items-center gap-4">
+        <AttendanceControl initialSession={initialSession} />
+
+        <Separator orientation="vertical" className="h-5" />
+
         <div className="flex items-center gap-1.5 text-xs">
           <span className="tabular text-muted">{profile.timezone}</span>
           <span className="tabular font-medium text-ink">
@@ -104,6 +119,9 @@ export function Header({ profile }: { profile: Profile }) {
               {profile.full_name}
               <Badge variant="blue">{ROLE_LABEL[profile.role]}</Badge>
             </DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => setLeaveOpen(true)}>
+              <CalendarPlus className="mr-2 h-3.5 w-3.5" /> Request leave
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="danger"
@@ -116,6 +134,8 @@ export function Header({ profile }: { profile: Profile }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <RequestLeaveDialog open={leaveOpen} onOpenChange={setLeaveOpen} />
     </header>
   );
 }

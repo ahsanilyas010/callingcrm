@@ -12,11 +12,110 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      attendance_sessions: {
+        Row: {
+          agent_note: string | null
+          approved_at: string | null
+          approved_by: string | null
+          break_minutes: number
+          clock_in_at: string | null
+          clock_in_device: string | null
+          clock_in_ip: unknown
+          clock_out_at: string | null
+          clock_out_ip: unknown
+          created_at: string
+          early_leave_minutes: number
+          id: string
+          is_manual_entry: boolean
+          late_minutes: number
+          lead_note: string | null
+          manual_reason: string | null
+          productive_minutes: number
+          shift_id: string | null
+          status: Database["public"]["Enums"]["attendance_status"] | null
+          user_id: string
+          work_date: string
+          worked_minutes: number
+        }
+        Insert: {
+          agent_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          break_minutes?: number
+          clock_in_at?: string | null
+          clock_in_device?: string | null
+          clock_in_ip?: unknown
+          clock_out_at?: string | null
+          clock_out_ip?: unknown
+          created_at?: string
+          early_leave_minutes?: number
+          id?: string
+          is_manual_entry?: boolean
+          late_minutes?: number
+          lead_note?: string | null
+          manual_reason?: string | null
+          productive_minutes?: number
+          shift_id?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          user_id: string
+          work_date: string
+          worked_minutes?: number
+        }
+        Update: {
+          agent_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          break_minutes?: number
+          clock_in_at?: string | null
+          clock_in_device?: string | null
+          clock_in_ip?: unknown
+          clock_out_at?: string | null
+          clock_out_ip?: unknown
+          created_at?: string
+          early_leave_minutes?: number
+          id?: string
+          is_manual_entry?: boolean
+          late_minutes?: number
+          lead_note?: string | null
+          manual_reason?: string | null
+          productive_minutes?: number
+          shift_id?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          user_id?: string
+          work_date?: string
+          worked_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -58,6 +157,54 @@ export type Database = {
           {
             foreignKeyName: "audit_log_actor_id_fkey"
             columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aux_logs: {
+        Row: {
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          reason: string | null
+          session_id: string
+          started_at: string
+          state: Database["public"]["Enums"]["aux_state"]
+          user_id: string
+        }
+        Insert: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          reason?: string | null
+          session_id: string
+          started_at?: string
+          state: Database["public"]["Enums"]["aux_state"]
+          user_id: string
+        }
+        Update: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          reason?: string | null
+          session_id?: string
+          started_at?: string
+          state?: Database["public"]["Enums"]["aux_state"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aux_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aux_logs_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -521,6 +668,27 @@ export type Database = {
           },
         ]
       }
+      holidays: {
+        Row: {
+          holiday_date: string
+          id: string
+          market: string | null
+          name: string
+        }
+        Insert: {
+          holiday_date: string
+          id?: string
+          market?: string | null
+          name: string
+        }
+        Update: {
+          holiday_date?: string
+          id?: string
+          market?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
       lead_batches: {
         Row: {
           acquired_at: string
@@ -770,6 +938,66 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          from_date: string
+          id: string
+          is_half_day: boolean
+          leave_type: string
+          reason: string | null
+          status: string
+          to_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          from_date: string
+          id?: string
+          is_half_day?: boolean
+          leave_type: string
+          reason?: string | null
+          status?: string
+          to_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          from_date?: string
+          id?: string
+          is_half_day?: boolean
+          leave_type?: string
+          reason?: string | null
+          status?: string
+          to_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agent_code: string | null
@@ -853,6 +1081,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shift_assignments: {
+        Row: {
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          shift_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          shift_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          shift_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_assignments_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          break_allowance_minutes: number
+          created_at: string
+          crosses_midnight: boolean | null
+          days_of_week: number[]
+          end_time: string
+          grace_minutes: number
+          id: string
+          is_active: boolean
+          name: string
+          start_time: string
+          timezone: string
+        }
+        Insert: {
+          break_allowance_minutes?: number
+          created_at?: string
+          crosses_midnight?: boolean | null
+          days_of_week?: number[]
+          end_time: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          start_time: string
+          timezone?: string
+        }
+        Update: {
+          break_allowance_minutes?: number
+          created_at?: string
+          crosses_midnight?: boolean | null
+          days_of_week?: number[]
+          end_time?: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_time?: string
+          timezone?: string
+        }
+        Relationships: []
       }
       suppression_list: {
         Row: {
@@ -1125,6 +1437,8 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      clock_in: { Args: { p_device?: string; p_ip?: unknown }; Returns: string }
+      clock_out: { Args: { p_ip?: unknown }; Returns: string }
       is_manager: { Args: never; Returns: boolean }
       my_team_id: { Args: never; Returns: string }
       my_team_members: { Args: never; Returns: string[] }
@@ -1138,6 +1452,13 @@ export type Database = {
         }
         Returns: string
       }
+      set_aux_state: {
+        Args: {
+          p_reason?: string
+          p_state: Database["public"]["Enums"]["aux_state"]
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
@@ -1147,6 +1468,27 @@ export type Database = {
         | "qa"
         | "agent"
         | "client_viewer"
+      attendance_status:
+        | "present"
+        | "late"
+        | "absent"
+        | "half_day"
+        | "on_leave"
+        | "holiday"
+        | "week_off"
+        | "wfh"
+      aux_state:
+        | "available"
+        | "on_call"
+        | "after_call_work"
+        | "break"
+        | "lunch"
+        | "prayer"
+        | "meeting"
+        | "training"
+        | "system_issue"
+        | "idle"
+        | "offline"
       lead_status:
         | "new"
         | "screening"
@@ -1315,6 +1657,29 @@ export const Constants = {
         "qa",
         "agent",
         "client_viewer",
+      ],
+      attendance_status: [
+        "present",
+        "late",
+        "absent",
+        "half_day",
+        "on_leave",
+        "holiday",
+        "week_off",
+        "wfh",
+      ],
+      aux_state: [
+        "available",
+        "on_call",
+        "after_call_work",
+        "break",
+        "lunch",
+        "prayer",
+        "meeting",
+        "training",
+        "system_issue",
+        "idle",
+        "offline",
       ],
       lead_status: [
         "new",
