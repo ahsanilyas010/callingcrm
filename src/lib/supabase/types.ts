@@ -64,6 +64,106 @@ export type Database = {
           },
         ]
       }
+      call_attempts: {
+        Row: {
+          agent_id: string
+          attempt_no: number
+          campaign_id: string
+          created_at: string
+          disposition_id: string | null
+          ended_at: string | null
+          id: string
+          lead_id: string
+          lead_local_time: string
+          notes: string | null
+          offshore_disclosure_given: boolean | null
+          screening_run_id: string | null
+          started_at: string
+          talk_seconds: number | null
+          within_call_window: boolean
+          wrap_seconds: number | null
+        }
+        Insert: {
+          agent_id: string
+          attempt_no: number
+          campaign_id: string
+          created_at?: string
+          disposition_id?: string | null
+          ended_at?: string | null
+          id?: string
+          lead_id: string
+          lead_local_time: string
+          notes?: string | null
+          offshore_disclosure_given?: boolean | null
+          screening_run_id?: string | null
+          started_at?: string
+          talk_seconds?: number | null
+          within_call_window: boolean
+          wrap_seconds?: number | null
+        }
+        Update: {
+          agent_id?: string
+          attempt_no?: number
+          campaign_id?: string
+          created_at?: string
+          disposition_id?: string | null
+          ended_at?: string | null
+          id?: string
+          lead_id?: string
+          lead_local_time?: string
+          notes?: string | null
+          offshore_disclosure_given?: boolean | null
+          screening_run_id?: string | null
+          started_at?: string
+          talk_seconds?: number | null
+          within_call_window?: boolean
+          wrap_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_attempts_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_disposition_id_fkey"
+            columns: ["disposition_id"]
+            isOneToOne: false
+            referencedRelation: "dispositions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_screening_run_id_fkey"
+            columns: ["screening_run_id"]
+            isOneToOne: false
+            referencedRelation: "suppression_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_assignments: {
         Row: {
           campaign_id: string
@@ -323,6 +423,353 @@ export type Database = {
           },
         ]
       }
+      data_sources: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          lawful_basis: string
+          lia_document_path: string | null
+          licence_terms_url: string | null
+          market: string | null
+          name: string
+          notes: string | null
+          provider_url: string | null
+          source_type: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lawful_basis: string
+          lia_document_path?: string | null
+          licence_terms_url?: string | null
+          market?: string | null
+          name: string
+          notes?: string | null
+          provider_url?: string | null
+          source_type: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lawful_basis?: string
+          lia_document_path?: string | null
+          licence_terms_url?: string | null
+          market?: string | null
+          name?: string
+          notes?: string | null
+          provider_url?: string | null
+          source_type?: string
+        }
+        Relationships: []
+      }
+      dispositions: {
+        Row: {
+          campaign_id: string | null
+          category: string
+          code: string
+          colour: string | null
+          id: string
+          is_terminal: boolean
+          label: string
+          requires_email: boolean
+          requires_followup: boolean
+          requires_note: boolean
+          sets_dnc: boolean
+          sort_order: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          category: string
+          code: string
+          colour?: string | null
+          id?: string
+          is_terminal?: boolean
+          label: string
+          requires_email?: boolean
+          requires_followup?: boolean
+          requires_note?: boolean
+          sets_dnc?: boolean
+          sort_order?: number
+        }
+        Update: {
+          campaign_id?: string | null
+          category?: string
+          code?: string
+          colour?: string | null
+          id?: string
+          is_terminal?: boolean
+          label?: string
+          requires_email?: boolean
+          requires_followup?: boolean
+          requires_note?: boolean
+          sets_dnc?: boolean
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispositions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_batches: {
+        Row: {
+          acquired_at: string
+          campaign_id: string
+          column_mapping: Json | null
+          created_at: string
+          data_source_id: string
+          error_report_path: string | null
+          id: string
+          notes: string | null
+          original_filename: string | null
+          rows_accepted: number
+          rows_duplicate: number
+          rows_rejected: number
+          rows_suppressed: number
+          rows_total: number
+          status: string
+          storage_path: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          acquired_at: string
+          campaign_id: string
+          column_mapping?: Json | null
+          created_at?: string
+          data_source_id: string
+          error_report_path?: string | null
+          id?: string
+          notes?: string | null
+          original_filename?: string | null
+          rows_accepted?: number
+          rows_duplicate?: number
+          rows_rejected?: number
+          rows_suppressed?: number
+          rows_total?: number
+          status?: string
+          storage_path?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          acquired_at?: string
+          campaign_id?: string
+          column_mapping?: Json | null
+          created_at?: string
+          data_source_id?: string
+          error_report_path?: string | null
+          id?: string
+          notes?: string | null
+          original_filename?: string | null
+          rows_accepted?: number
+          rows_duplicate?: number
+          rows_rejected?: number
+          rows_suppressed?: number
+          rows_total?: number
+          status?: string
+          storage_path?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_batches_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_batches_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_batches_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          alt_phone_e164: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          attempt_count: number
+          batch_id: string | null
+          campaign_id: string
+          city: string | null
+          company_name: string | null
+          consent_captured_at: string | null
+          consent_evidence_path: string | null
+          consent_source: string | null
+          consent_status: string | null
+          country_code: string
+          created_at: string
+          custom: Json
+          data_source_id: string | null
+          dnc_reason: string | null
+          dnc_set_at: string | null
+          do_not_call: boolean
+          email: string | null
+          external_ref: string | null
+          first_name: string | null
+          id: string
+          job_title: string | null
+          last_attempt_at: string | null
+          last_disposition_id: string | null
+          last_name: string | null
+          lead_score: number | null
+          lead_timezone: string | null
+          next_action_at: string | null
+          phone_e164: string
+          phone_raw: string | null
+          phone_type: string | null
+          postcode: string | null
+          region: string | null
+          retention_expires_at: string | null
+          screened_at: string | null
+          screening_run_id: string | null
+          screening_status: Database["public"]["Enums"]["screening_status"]
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          alt_phone_e164?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          attempt_count?: number
+          batch_id?: string | null
+          campaign_id: string
+          city?: string | null
+          company_name?: string | null
+          consent_captured_at?: string | null
+          consent_evidence_path?: string | null
+          consent_source?: string | null
+          consent_status?: string | null
+          country_code: string
+          created_at?: string
+          custom?: Json
+          data_source_id?: string | null
+          dnc_reason?: string | null
+          dnc_set_at?: string | null
+          do_not_call?: boolean
+          email?: string | null
+          external_ref?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_attempt_at?: string | null
+          last_disposition_id?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          lead_timezone?: string | null
+          next_action_at?: string | null
+          phone_e164: string
+          phone_raw?: string | null
+          phone_type?: string | null
+          postcode?: string | null
+          region?: string | null
+          retention_expires_at?: string | null
+          screened_at?: string | null
+          screening_run_id?: string | null
+          screening_status?: Database["public"]["Enums"]["screening_status"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          alt_phone_e164?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          attempt_count?: number
+          batch_id?: string | null
+          campaign_id?: string
+          city?: string | null
+          company_name?: string | null
+          consent_captured_at?: string | null
+          consent_evidence_path?: string | null
+          consent_source?: string | null
+          consent_status?: string | null
+          country_code?: string
+          created_at?: string
+          custom?: Json
+          data_source_id?: string | null
+          dnc_reason?: string | null
+          dnc_set_at?: string | null
+          do_not_call?: boolean
+          email?: string | null
+          external_ref?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_attempt_at?: string | null
+          last_disposition_id?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          lead_timezone?: string | null
+          next_action_at?: string | null
+          phone_e164?: string
+          phone_raw?: string | null
+          phone_type?: string | null
+          postcode?: string | null
+          region?: string | null
+          retention_expires_at?: string | null
+          screened_at?: string | null
+          screening_run_id?: string | null
+          screening_status?: Database["public"]["Enums"]["screening_status"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "lead_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agent_code: string | null
@@ -407,6 +854,117 @@ export type Database = {
           },
         ]
       }
+      suppression_list: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          evidence_note: string | null
+          expires_at: string | null
+          is_permanent: boolean
+          lead_id: string | null
+          market: string | null
+          phone_e164: string
+          reason: Database["public"]["Enums"]["suppression_reason"]
+          source: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          evidence_note?: string | null
+          expires_at?: string | null
+          is_permanent?: boolean
+          lead_id?: string | null
+          market?: string | null
+          phone_e164: string
+          reason: Database["public"]["Enums"]["suppression_reason"]
+          source?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          evidence_note?: string | null
+          expires_at?: string | null
+          is_permanent?: boolean
+          lead_id?: string | null
+          market?: string | null
+          phone_e164?: string
+          reason?: Database["public"]["Enums"]["suppression_reason"]
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppression_list_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppression_runs: {
+        Row: {
+          batch_id: string | null
+          campaign_id: string | null
+          evidence_path: string | null
+          id: string
+          numbers_matched: number | null
+          numbers_submitted: number | null
+          provider: string
+          provider_reference: string | null
+          ran_at: string
+          ran_by: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          campaign_id?: string | null
+          evidence_path?: string | null
+          id?: string
+          numbers_matched?: number | null
+          numbers_submitted?: number | null
+          provider: string
+          provider_reference?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          campaign_id?: string | null
+          evidence_path?: string | null
+          id?: string
+          numbers_matched?: number | null
+          numbers_submitted?: number | null
+          provider?: string
+          provider_reference?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppression_runs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "lead_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppression_runs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppression_runs_ran_by_fkey"
+            columns: ["ran_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -479,7 +1037,88 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_dialable_leads: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          alt_phone_e164: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          attempt_count: number | null
+          batch_id: string | null
+          campaign_code: string | null
+          campaign_id: string | null
+          city: string | null
+          company_name: string | null
+          consent_captured_at: string | null
+          consent_evidence_path: string | null
+          consent_source: string | null
+          consent_status: string | null
+          country_code: string | null
+          created_at: string | null
+          custom: Json | null
+          data_source_id: string | null
+          dnc_reason: string | null
+          dnc_set_at: string | null
+          do_not_call: boolean | null
+          email: string | null
+          external_ref: string | null
+          first_name: string | null
+          id: string | null
+          job_title: string | null
+          last_attempt_at: string | null
+          last_disposition_id: string | null
+          last_name: string | null
+          lead_local_time: string | null
+          lead_score: number | null
+          lead_timezone: string | null
+          market: string | null
+          next_action_at: string | null
+          phone_e164: string | null
+          phone_raw: string | null
+          phone_type: string | null
+          postcode: string | null
+          region: string | null
+          retention_expires_at: string | null
+          screened_at: string | null
+          screening_run_id: string | null
+          screening_status:
+            | Database["public"]["Enums"]["screening_status"]
+            | null
+          status: Database["public"]["Enums"]["lead_status"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "lead_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auth_role: {
@@ -497,6 +1136,40 @@ export type Database = {
         | "qa"
         | "agent"
         | "client_viewer"
+      lead_status:
+        | "new"
+        | "screening"
+        | "ready"
+        | "assigned"
+        | "in_progress"
+        | "callback"
+        | "contacted"
+        | "qualified"
+        | "converted"
+        | "rejected"
+        | "unreachable"
+        | "suppressed"
+      screening_status:
+        | "unscreened"
+        | "pending"
+        | "passed"
+        | "blocked"
+        | "expired"
+      suppression_reason:
+        | "internal_optout"
+        | "verbal_dnc"
+        | "tps"
+        | "ctps"
+        | "us_national_dnc"
+        | "state_dnc"
+        | "client_supplied_dnc"
+        | "complaint"
+        | "litigator"
+        | "deceased"
+        | "wrong_number"
+        | "invalid_number"
+        | "duplicate_entity"
+        | "vulnerable_person"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -631,6 +1304,43 @@ export const Constants = {
         "qa",
         "agent",
         "client_viewer",
+      ],
+      lead_status: [
+        "new",
+        "screening",
+        "ready",
+        "assigned",
+        "in_progress",
+        "callback",
+        "contacted",
+        "qualified",
+        "converted",
+        "rejected",
+        "unreachable",
+        "suppressed",
+      ],
+      screening_status: [
+        "unscreened",
+        "pending",
+        "passed",
+        "blocked",
+        "expired",
+      ],
+      suppression_reason: [
+        "internal_optout",
+        "verbal_dnc",
+        "tps",
+        "ctps",
+        "us_national_dnc",
+        "state_dnc",
+        "client_supplied_dnc",
+        "complaint",
+        "litigator",
+        "deceased",
+        "wrong_number",
+        "invalid_number",
+        "duplicate_entity",
+        "vulnerable_person",
       ],
     },
   },

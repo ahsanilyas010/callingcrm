@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { redirect } from "next/navigation";
@@ -49,9 +50,10 @@ export default async function CampaignsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {(campaigns ?? []).map((c) => (
-                <div
+                <Link
                   key={c.id}
-                  className="animate-slide-up rounded-lg border border-line bg-white p-4 shadow-sm"
+                  href={`/admin/campaigns/${c.id}`}
+                  className="animate-slide-up block rounded-lg border border-line bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div>
@@ -86,7 +88,7 @@ export default async function CampaignsPage() {
                         : `· expires after ${c.screening_max_age_days}d`}
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

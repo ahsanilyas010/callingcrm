@@ -3,10 +3,11 @@
 Assorted BPO's call-centre CRM and workforce platform. Next.js 15 (App
 Router, strict TypeScript) + Supabase (Postgres, Auth, Storage, Realtime).
 
-This repo currently implements **Phase 1** of the build spec: the
-foundation (identity/org/campaigns, RLS, audit triggers, auth, the app
-shell) plus a fully-animated preview of the agent dial workspace ahead of
-Phase 2/3 wiring it to real leads.
+This repo currently implements **Phase 1** (foundation: identity/org/
+campaigns, RLS, audit triggers, auth, the app shell) and the core of
+**Phase 2** (leads, suppression, the dialable-view compliance gate, manual
+lead entry) from the build spec, plus a fully-animated preview of the agent
+dial workspace ahead of Phase 3 wiring it to the real queue.
 
 ## Setup
 
@@ -78,9 +79,14 @@ The app currently renders a placeholder mark in the exact brand colours.
 - Real, backed by the live database: auth/login, forced password change,
   user provisioning with one-time credential reveal, campaigns (with
   vertical/risk-tier compliance presets), clients, the audit log, session
-  and credential-event views.
+  and credential-event views, manual lead entry with mandatory provenance
+  (data source + lawful basis), the suppression console (add/search,
+  global and instant), and `v_dialable_leads` — verified directly against
+  the live database that an unscreened lead never appears and that adding
+  a number to `suppression_list` removes it from the view immediately.
 - Preview only (mock data, clearly labelled in the UI): the agent dial
-  workspace (`/workspace`) and Live Floor, since leads/dispositions/
-  call_attempts land in Phase 2/3. Performance, Attendance, Compliance
-  console, Data sourcing and QA are placeholder screens pointing at the
+  workspace (`/workspace`) and Live Floor, since the queue itself
+  (Phase 3) isn't wired up yet — the underlying `v_dialable_leads` view it
+  will query is real and tested. Performance, Attendance, Data sourcing
+  (the bulk import wizard) and QA are placeholder screens pointing at the
   phase that builds them for real.
