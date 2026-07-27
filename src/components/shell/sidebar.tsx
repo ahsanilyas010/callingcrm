@@ -4,11 +4,40 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  Activity,
+  BarChart3,
+  Users,
+  Megaphone,
+  CalendarCheck,
+  ShieldCheck,
+  Database,
+  Lock,
+  Headset,
+  Building2,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/mark";
-import type { NavItem } from "@/lib/nav";
+import type { NavItem, NavIconName } from "@/lib/nav";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+
+// NavItem.icon arrives as a string name (see lib/nav.ts for why) — resolve
+// it to the actual component here, client-side.
+const ICON_MAP: Record<NavIconName, LucideIcon> = {
+  Activity,
+  BarChart3,
+  Users,
+  Megaphone,
+  CalendarCheck,
+  ShieldCheck,
+  Database,
+  Lock,
+  Headset,
+  Building2,
+};
 
 export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -31,7 +60,7 @@ export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: 
         <nav className="flex-1 overflow-y-auto py-2">
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            const Icon = item.icon;
+            const Icon = ICON_MAP[item.icon];
             const link = (
               <Link
                 key={item.href}
