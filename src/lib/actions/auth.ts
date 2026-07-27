@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export interface ActionResult {
   error?: string;
@@ -15,6 +16,13 @@ export async function signIn(_prev: ActionResult, formData: FormData): Promise<A
 
   if (!email || !password) {
     return { error: "Enter your email and password." };
+  }
+
+  const hdrsForLimit = await headers();
+  const ipForLimit = hdrsForLimit.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const allowed = await checkRateLimit("login", `${ipForLimit}:${email.toLowerCase()}`, 10, 300);
+  if (!allowed) {
+    return { error: "Too many attempts. Wait a few minutes and try again." };
   }
 
   const supabase = await createClient();

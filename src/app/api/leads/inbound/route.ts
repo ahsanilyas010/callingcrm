@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { importLeads } from "@/lib/connectors/pipeline";
 import type { NormalisedLead } from "@/lib/connectors/types";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Section 6.4 — "Inbound web forms | Both | First-party consent | Highest
 // value... Build the inbound web form connector properly — it is the
@@ -13,6 +14,12 @@ import type { NormalisedLead } from "@/lib/connectors/types";
 // suppression/commit pipeline as every other source.
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const allowed = await checkRateLimit("leads_inbound", ip, 20, 3600);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many submissions. Try again later." }, { status: 429 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

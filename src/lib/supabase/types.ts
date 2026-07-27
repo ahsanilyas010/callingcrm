@@ -1943,6 +1943,10 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      check_rate_limit: {
+        Args: { p_bucket: string; p_identifier: string; p_max_hits: number; p_window_seconds: number }
+        Returns: boolean
+      }
       clock_in: { Args: { p_device?: string; p_ip?: unknown }; Returns: string }
       clock_out: { Args: { p_ip?: unknown }; Returns: string }
       get_agent_scorecard: {

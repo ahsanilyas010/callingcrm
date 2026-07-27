@@ -1,9 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe-token";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { Database } from "@/lib/supabase/types";
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const allowed = await checkRateLimit("unsubscribe", ip, 30, 3600);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const email = request.nextUrl.searchParams.get("email");
   const token = request.nextUrl.searchParams.get("token");
 
