@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/*
+ * ABPO Command — brand tokens.
+ * Colours sampled directly from the Assorted logo master. Exact hex, not
+ * approximations. Blue is the only brand colour that carries white text
+ * (9.80:1), so blue is primary/action. Orange is the attention accent and
+ * green is the earned confirmation colour — both take dark ink text only,
+ * never white.
+ */
+:root {
+  --brand-blue: #064288;
+  --brand-blue-hover: #053567;
+  --brand-green: #76b049;
+  --brand-orange: #f87026;
+
+  --brand-green-text: #578236;
+  --brand-orange-text: #cd4d07;
+
+  --brand-blue-tint: #e1e8f1;
+  --brand-blue-tint-2: #c1d0e1;
+  --brand-green-tint: #eff6e9;
+  --brand-green-tint-2: #ddebd2;
+  --brand-orange-tint: #feeee5;
+  --brand-orange-tint-2: #fddbc9;
+
+  --danger: #c4342b;
+  --danger-tint: #fbe9e7;
+  --warning: #d89614;
+  --warning-tint: #fbf1dc;
+  --ink: #14181f;
+  --muted: #6b7482;
+  --line: #e3e6ea;
+  --surface: #ffffff;
+  --canvas: #f6f7f9;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-hover: var(--brand-blue-hover);
+  --color-brand-green: var(--brand-green);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-green-text: var(--brand-green-text);
+  --color-brand-orange-text: var(--brand-orange-text);
+  --color-brand-blue-tint: var(--brand-blue-tint);
+  --color-brand-blue-tint-2: var(--brand-blue-tint-2);
+  --color-brand-green-tint: var(--brand-green-tint);
+  --color-brand-green-tint-2: var(--brand-green-tint-2);
+  --color-brand-orange-tint: var(--brand-orange-tint);
+  --color-brand-orange-tint-2: var(--brand-orange-tint-2);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-slide-up: slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-in-right: slide-in-right 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Compact, keyboard-first density. 32px rows, no decorative gradients. */
+.tabular {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+/* Respect reduced-motion preference — every animation degrades to an
+   instant state change rather than skipping the final frame. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

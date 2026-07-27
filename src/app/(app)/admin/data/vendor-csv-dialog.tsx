@@ -1,0 +1,228 @@
+"use client";
+
+import { useActionState, useEffect, useState, useRef } from "react";
+import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Upload } from "lucide-react";
+import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+const initialState: ActionResult = {};
+
+const MAP_FIELDS: { key: string; label: string; required?: boolean }[] = [
+  { key: "map_phone", label: "Phone", required: true },
+  { key: "map_first_name", label: "First name" },
+  { key: "map_last_name", label: "Last name" },
+  { key: "map_company_name", label: "Company" },
+  { key: "map_job_title", label: "Job title" },
+  { key: "map_email", label: "Email" },
+  { key: "map_address", label: "Address line 1" },
+  { key: "map_city", label: "City" },
+  { key: "map_region", label: "Region" },
+  { key: "map_postcode", label: "Postcode" },
+  { key: "map_external_ref", label: "External reference" },
+];
+
+function SubmitButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending || disabled}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+    </Button>
+  );
+}
+
+export function VendorCsvDialog({
+  campaigns,
+  dataSources,
+}: {
+  campaigns: { id: string; name: string; code: string }[];
+  dataSources: { id: string; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction] = useActionState(uploadVendorCsv, initialState);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [campaignId, setCampaignId] = useState(campaigns[0]?.id ?? "");
+  const [dataSourceId, setDataSourceId] = useState(dataSources[0]?.id ?? "");
+  const [country, setCountry] = useState("GB");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.ok) {
+      setOpen(false);
+      setHeaders([]);
+      setMapping({});
+      router.refresh();
+    }
+  }, [state.ok, router]);
+
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const XLSX = await import("xlsx");
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
+    setHeaders(rows.length > 0 ? Object.keys(rows[0]) : []);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        <Upload className="h-3.5 w-3.5" /> Import vendor CSV
+      </Button>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Import vendor CSV / XLSX</DialogTitle>
+          <DialogDescription>
+            Every row gets validated, suppression-screened and committed the same way as any other
+            source — a licensed vendor list is no more trusted than a spreadsheet by default.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form action={formAction} className="flex flex-col gap-3">
+          <input type="hidden" name="campaign_id" value={campaignId} />
+          <input type="hidden" name="data_source_id" value={dataSourceId} />
+          <input type="hidden" name="country" value={country} />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Campaign</Label>
+              <Select value={campaignId} onValueChange={setCampaignId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Data source (must be vendor-licensed with a lawful basis)</Label>
+              <Select value={dataSourceId} onValueChange={setDataSourceId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {dataSources.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Country (for phone parsing)</Label>
+            <Select value={country} onValueChange={setCountry}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GB">GB</SelectItem>
+                <SelectItem value="US">US</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="file">File (.csv, .xlsx)</Label>
+            <Input
+              id="file"
+              name="file"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              ref={fileInputRef}
+              onChange={onFileChange}
+              required
+            />
+          </div>
+
+          {headers.length > 0 && (
+            <div className="rounded-md border border-line p-3">
+              <p className="mb-2 text-xs font-medium text-ink">Map columns</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {MAP_FIELDS.map((f) => (
+                  <div key={f.key} className="flex flex-col gap-1">
+                    <Label className="text-[11px]">
+                      {f.label}
+                      {f.required && <span className="text-danger"> *</span>}
+                    </Label>
+                    <Select
+                      value={mapping[f.key] ?? "__none"}
+                      onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Not mapped" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Not mapped</SelectItem>
+                        {headers.map((h) => (
+                          <SelectItem key={h} value={h}>
+                            {h}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input
+                      type="hidden"
+                      name={f.key}
+                      value={mapping[f.key] && mapping[f.key] !== "__none" ? mapping[f.key] : ""}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <AnimatePresence>
+            {state.error && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-md bg-danger-tint px-3 py-2 text-xs text-danger"
+              >
+                {state.error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <SubmitButton disabled={headers.length === 0 || !mapping.map_phone || mapping.map_phone === "__none"} />
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
