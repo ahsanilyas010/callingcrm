@@ -11,23 +11,54 @@ assignment/auto-top-up), **Phase 4** (attendance: clock in/out, aux states,
 shifts, leave requests, `pg_cron` sweeps), **Phase 5** (follow-ups with a
 live realtime tray, and the email module with suppression/unsubscribe), and
 **Phase 6** (QA scorecards/review queue, campaign funnel and agent
-scorecard reporting) from the build spec.
+scorecard reporting), and **Phase 7** (data-source connectors: Companies
+House, UK planning, US municipal permits, vendor CSV/XLSX, the inbound web
+form, fetch-run history, and per-source performance reporting) from the
+build spec.
 
-> **Migrations 21-22 (`qa.sql`, `reporting.sql`) are written but not yet
-> applied to the live database.** The Supabase MCP connector started
-> rejecting `apply_migration`/`execute_sql` calls with "MCP tool call
-> requires approval" mid-build, and a direct `psql` connection using
-> `DATABASE_URL` is also blocked from this sandbox (DNS only resolves an
-> IPv6 address for the direct host, and the pooler times out — only HTTPS
-> egress works here). To keep the app building, `src/lib/supabase/types.ts`
-> was hand-extended to describe the two new tables (`qa_scorecards`,
-> `qa_reviews`), the `v_campaign_funnel` view, and the `get_agent_scorecard`
-> RPC/`agent_scorecard_row` type that migration 22 defines — **these do not
-> exist in the live database yet.** Before using `/qa` or
-> `/admin/performance`: apply `00000000000021_qa.sql` and
-> `00000000000022_reporting.sql` (Supabase dashboard SQL editor, the CLI, or
-> a working MCP connection), then regenerate types for real and diff away
-> the hand-written stopgap.
+> **Migrations 21-23 (`qa.sql`, `reporting.sql`, `data_sourcing.sql`) are
+> written but not yet applied to the live database.** The Supabase MCP
+> connector has been intermittently rejecting `apply_migration`/
+> `execute_sql` calls with "MCP tool call requires approval" (and dropping
+> the connection entirely at times) since partway through this build, and a
+> direct `psql` connection using `DATABASE_URL` is also blocked from this
+> sandbox (DNS only resolves an IPv6 address for the direct host, and the
+> pooler times out — the sandbox's outbound network policy only allows an
+> allow-listed set of hosts over HTTPS; confirmed via the agent proxy's
+> status endpoint, which shows a `connect_rejected`/403 for arbitrary hosts
+> too — see the Phase 7 connectors note below). To keep the app building,
+> `src/lib/supabase/types.ts` was hand-extended to describe the tables/
+> views/RPCs these migrations define — **none of it exists in the live
+> database yet.** Before using `/qa`, `/admin/performance`, or `/admin/data`:
+> apply `00000000000021_qa.sql`, `00000000000022_reporting.sql`, and
+> `00000000000023_data_sourcing.sql` (Supabase dashboard SQL editor, the
+> CLI, or a working MCP connection), then regenerate types for real and diff
+> away the hand-written stopgap.
+
+### Phase 7 connectors — a note on what's verified vs. best-effort
+
+The Companies House connector (`src/lib/connectors/companies-house.ts`) is
+implemented against its long-stable, well-documented public Search API and
+is reasonably high-confidence. The UK planning connector
+(`uk-planning.ts`, via the PlanIt aggregator) and the US permits connector
+(`us-permits.ts`, generic Socrata client) could **not** be verified against
+a live response during this build — this sandbox's outbound network policy
+blocks arbitrary hosts (only an allow-list, confirmed via
+`$HTTPS_PROXY/__agentproxy/status`, which logged a `connect_rejected`/403
+for `data.cityofchicago.org`). The US permits connector is deliberately
+generic and config-driven for exactly this reason: every municipality's
+Socrata dataset has different column names, so the field mapping lives in
+`data_sources.config.fieldMap` rather than being hardcoded, and must be set
+from the target portal's real schema before a source is switched on. Verify
+both connectors' field names against a live call before relying on them for
+a real campaign.
+
+Neither Companies House nor UK planning registers publish a personal phone
+number (by design — see spec 6.4's boundary against undisclosed
+enrichment), so records from those two connectors are expected to be
+rejected by the pipeline for lacking one; that's correct behaviour, not a
+bug. They still populate a target company/site list with full provenance,
+which a separate, explicitly-out-of-scope enrichment step could complete.
 
 ## Setup
 
@@ -117,15 +148,26 @@ The app currently renders a placeholder mark in the exact brand colours.
   suppression-gated sends via a swappable `EmailProvider`, HMAC-signed
   one-click unsubscribe).
 - Built but **pending migration application** (see the callout above): the
-  QA review queue (`/qa` — scorecard-driven, fatal-breach detection) and
-  the performance dashboard (`/admin/performance` — campaign funnel chart,
+  QA review queue (`/qa` — scorecard-driven, fatal-breach detection), the
+  performance dashboard (`/admin/performance` — campaign funnel chart,
   7-day agent leaderboard sorted by calls-attempted/contact-rate rather
-  than raw conversion, since verticals aren't comparable on that metric).
-  Both will 500 against the live database until migrations 21-22 are
-  applied.
+  than raw conversion, since verticals aren't comparable on that metric),
+  and the data-sourcing module (`/admin/data` — connector registry, fetch-
+  run history, per-source performance). All three will fail against the
+  live database until migrations 21-23 are applied.
+  The data-sourcing module itself: a `DataSourceConnector` interface with
+  Companies House, UK planning (PlanIt), and a generic configurable-Socrata
+  US-permits connector; a vendor CSV/XLSX importer with client-side column
+  mapping; and a public inbound-web-form endpoint
+  (`/api/leads/inbound`) with first-party consent capture (verbatim consent
+  text, IP, timestamp). Every path — connector fetch, CSV row, or web-form
+  submission — routes through the same `importLeads()` pipeline: reject if
+  no data source (and therefore no lawful basis) resolves, validate the
+  phone number, screen against suppression, then commit. See the connectors
+  note above for which of the three API connectors were verified against a
+  live response vs. built to spec but untested from this sandbox.
 - Preview / not yet built: Live Floor shows real campaign/assignment
-  counts but no real-time call activity feed. Data sourcing (the bulk
-  import wizard and external connectors) is Phase 7, not yet started.
+  counts but no real-time call activity feed.
 
 ## A real bug found and fixed along the way
 

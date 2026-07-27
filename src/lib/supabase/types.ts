@@ -1561,6 +1561,76 @@ export type Database = {
         }
         Relationships: []
       }
+      source_fetch_runs: {
+        Row: {
+          campaign_id: string | null
+          data_source_id: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          params: Json
+          raw_response_path: string | null
+          records_found: number
+          records_imported: number
+          records_rejected: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          data_source_id: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          params?: Json
+          raw_response_path?: string | null
+          records_found?: number
+          records_imported?: number
+          records_rejected?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          data_source_id?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          params?: Json
+          raw_response_path?: string | null
+          records_found?: number
+          records_imported?: number
+          records_rejected?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_fetch_runs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_fetch_runs_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_fetch_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppression_list: {
         Row: {
           added_by: string | null
@@ -1846,6 +1916,26 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_source_performance: {
+        Row: {
+          contacted: number | null
+          converted: number | null
+          data_source_id: string | null
+          fetch_run_count: number | null
+          last_fetched_at: string | null
+          lawful_basis: string | null
+          leads_loaded: number | null
+          is_active: boolean | null
+          market: string | null
+          name: string | null
+          qualified: number | null
+          screened_passed: number | null
+          source_type: string | null
+          suppressed: number | null
+          worked: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
