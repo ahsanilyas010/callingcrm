@@ -56,7 +56,7 @@ export function FollowupTray({ userId, initial }: { userId: string; initial: Fol
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
+      <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))] p-0">
         <div className="border-b border-line px-3 py-2 text-xs font-medium text-muted">
           Follow-ups due
         </div>

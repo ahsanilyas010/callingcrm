@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { LogOut, User, CalendarPlus } from "lucide-react";
+import { LogOut, User, CalendarPlus, Menu } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { RequestLeaveDialog } from "@/components/shell/request-leave-dialog";
 import {
@@ -65,10 +65,12 @@ export function Header({
   profile,
   initialSession,
   initialFollowups,
+  onMenuClick,
 }: {
   profile: Profile;
   initialSession: CurrentSession | null;
   initialFollowups: FollowupRow[];
+  onMenuClick?: () => void;
 }) {
   const title = useTitle();
   const [now, setNow] = useState<Date | null>(null);
@@ -81,21 +83,28 @@ export function Header({
   }, []);
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-line bg-white px-4">
-      <div className="flex items-center gap-2">
-        <h1 className="text-sm font-semibold text-ink">{title}</h1>
+    <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-line bg-white px-2 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink md:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-4.5 w-4.5" />
+        </button>
+        <h1 className="truncate text-sm font-semibold text-ink">{title}</h1>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         <AttendanceControl initialSession={initialSession} />
 
-        <Separator orientation="vertical" className="h-5" />
+        <Separator orientation="vertical" className="hidden h-5 sm:block" />
 
         <FollowupTray userId={profile.id} initial={initialFollowups} />
 
-        <Separator orientation="vertical" className="h-5" />
+        <Separator orientation="vertical" className="hidden h-5 md:block" />
 
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="hidden items-center gap-1.5 text-xs md:flex">
           <span className="tabular text-muted">{profile.timezone}</span>
           <span className="tabular font-medium text-ink">
             {now

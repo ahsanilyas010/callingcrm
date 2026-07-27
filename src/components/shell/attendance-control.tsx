@@ -111,15 +111,15 @@ export function AttendanceControl({ initialSession }: { initialSession: CurrentS
     return (
       <Button size="sm" onClick={handleClockIn} disabled={pending}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
-        Clock in
+        <span className="hidden sm:inline">Clock in</span>
       </Button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2">
       <Select value={session.currentAux ?? "available"} onValueChange={handleAuxChange}>
-        <SelectTrigger className="h-8 w-40 text-xs">
+        <SelectTrigger className="h-8 w-24 text-xs sm:w-40">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -130,10 +130,10 @@ export function AttendanceControl({ initialSession }: { initialSession: CurrentS
           ))}
         </SelectContent>
       </Select>
-      <span className="tabular text-xs text-muted">{elapsed}</span>
+      <span className="hidden tabular text-xs text-muted sm:inline">{elapsed}</span>
       <Button size="sm" variant="secondary" onClick={handleClockOut} disabled={pending}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
-        Clock out
+        <span className="hidden sm:inline">Clock out</span>
       </Button>
     </div>
   );

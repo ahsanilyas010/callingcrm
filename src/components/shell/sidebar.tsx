@@ -10,7 +10,7 @@ import { BrandMark } from "@/components/brand/mark";
 import type { NavItem } from "@/lib/nav";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-export function Sidebar({ items }: { items: NavItem[] }) {
+export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -36,6 +36,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavigate}
                 className={cn(
                   "relative mx-2 mb-0.5 flex h-8 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors",
                   active ? "bg-brand-blue-tint text-brand-blue font-medium" : "text-muted hover:bg-canvas hover:text-ink",
