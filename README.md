@@ -19,25 +19,25 @@ limiting on public endpoints, a mobile-friendly app shell, structured
 error logging, an index review, and this README/the runbook/the
 load-testing prep — see `RUNBOOK.md` and `docs/`) from the build spec.
 
-> **Migrations 21-25 (`qa.sql`, `reporting.sql`, `data_sourcing.sql`,
-> `hardening.sql`, `index_review.sql`) are written but not yet applied to
-> the live database.** The Supabase MCP connector has been intermittently
-> rejecting `apply_migration`/`execute_sql` calls with "MCP tool call
-> requires approval" (and dropping the connection entirely at times) since
-> partway through this build, and a direct `psql` connection using
-> `DATABASE_URL` is also blocked from this sandbox (DNS only resolves an
-> IPv6 address for the direct host, and the pooler times out — the
-> sandbox's outbound network policy only allows an allow-listed set of
-> hosts over HTTPS; confirmed via the agent proxy's status endpoint, which
-> shows a `connect_rejected`/403 for arbitrary hosts too — see the Phase 7
-> connectors note below). To keep the app building, `src/lib/supabase/types.ts`
-> was hand-extended to describe the tables/views/RPCs these migrations
-> define — **none of it exists in the live database yet.** Before using
-> `/qa`, `/admin/performance`, `/admin/data`, screening, or rate limiting:
-> apply `00000000000021_qa.sql` through `00000000000025_index_review.sql`
-> (Supabase dashboard SQL editor, the
-> CLI, or a working MCP connection), then regenerate types for real and diff
-> away the hand-written stopgap.
+> **Update:** migrations 21-25 have now been applied to the live database
+> (via the Supabase dashboard's SQL editor, since the Supabase MCP
+> connector used for this build intermittently rejected `apply_migration`/
+> `execute_sql` with "MCP tool call requires approval," and a direct
+> `psql` connection was also blocked from the build sandbox's network
+> policy). Applied and verified present: `qa_scorecards`, `qa_reviews`,
+> `source_fetch_runs`, `rate_limit_hits`, `v_campaign_funnel`,
+> `v_source_performance`, `mv_agent_scorecard_daily`,
+> `get_agent_scorecard()`, `check_rate_limit()`, `sweep_screening_expiry()`,
+> `sweep_rate_limit_hits()`, `refresh_agent_scorecard()`, the two Phase 8
+> indexes, and the `compliance-evidence` storage bucket.
+> `src/lib/supabase/types.ts` was hand-extended (rather than generated) to
+> describe these ahead of application, since `generate_typescript_types`
+> was also blocked by the same connector issue — it was authored directly
+> from the migration files now applied, so it should already match, but
+> regenerate it for real
+> (`supabase gen types typescript --project-id uvgekzergvtbvvhvuyyh`) and
+> diff away the hand-written version the next time a working connection is
+> available, as a final sanity check.
 
 ### Phase 7 connectors — a note on what's verified vs. best-effort
 
@@ -151,14 +151,13 @@ The app currently renders a placeholder mark in the exact brand colours.
   Supabase Realtime, with a snooze cap), and the email module (templates,
   suppression-gated sends via a swappable `EmailProvider`, HMAC-signed
   one-click unsubscribe).
-- Built but **pending migration application** (see the callout above): the
-  QA review queue (`/qa` — scorecard-driven, fatal-breach detection), the
-  performance dashboard (`/admin/performance` — campaign funnel chart,
-  7-day agent leaderboard sorted by calls-attempted/contact-rate rather
-  than raw conversion, since verticals aren't comparable on that metric),
-  and the data-sourcing module (`/admin/data` — connector registry, fetch-
-  run history, per-source performance). All three will fail against the
-  live database until migrations 21-23 are applied.
+- Also real, now that migrations 21-25 are applied (see the callout
+  above): the QA review queue (`/qa` — scorecard-driven, fatal-breach
+  detection), the performance dashboard (`/admin/performance` — campaign
+  funnel chart, 7-day agent leaderboard sorted by calls-attempted/
+  contact-rate rather than raw conversion, since verticals aren't
+  comparable on that metric), and the data-sourcing module (`/admin/data`
+  — connector registry, fetch-run history, per-source performance).
   The data-sourcing module itself: a `DataSourceConnector` interface with
   Companies House, UK planning (PlanIt), and a generic configurable-Socrata
   US-permits connector; a vendor CSV/XLSX importer with client-side column
@@ -170,12 +169,11 @@ The app currently renders a placeholder mark in the exact brand colours.
   phone number, screen against suppression, then commit. See the connectors
   note above for which of the three API connectors were verified against a
   live response vs. built to spec but untested from this sandbox.
-- Also built but **pending migration application**: the Phase 8 screening
-  provider layer (`/admin/compliance`'s "Run screening" — internal check is
-  fully real; TPS/CTPS/US DNC are `ManualEvidenceProvider`-based bureau-
-  evidence uploads pending a real bureau account, per spec section 9) and
-  DB-backed rate limiting on login, the inbound web form, and unsubscribe.
-  What doesn't need any migration and is real today: the mobile-friendly
+- Also real: the Phase 8 screening provider layer (`/admin/compliance`'s
+  "Run screening" — internal check is fully real; TPS/CTPS/US DNC are
+  `ManualEvidenceProvider`-based bureau-evidence uploads pending a real
+  bureau account, per spec section 9) and DB-backed rate limiting on
+  login, the inbound web form, and unsubscribe. Plus the mobile-friendly
   app shell (off-canvas nav below the `md` breakpoint), structured error
   logging (`src/lib/error-tracking.ts` — no monitoring account configured
   yet, logs to stderr), and the index review / load-testing prep in

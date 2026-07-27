@@ -102,11 +102,12 @@ against a schema `types.ts` doesn't know about:
 supabase gen types typescript --project-id uvgekzergvtbvvhvuyyh > src/lib/supabase/types.ts
 ```
 
-At the time of writing, migrations 21-24 are written to
-`supabase/migrations/` but not yet applied to the live database — see the
-README's callout for why (a Supabase MCP connector issue, not a code
-issue) and what to check before trusting `/qa`, `/admin/performance`,
-`/admin/data`, or the screening/rate-limiting features.
+Migrations 21-25 have been applied to the live database (via the
+Supabase dashboard SQL editor, since the Supabase MCP connector used for
+this build intermittently rejected `apply_migration`/`execute_sql`).
+`types.ts` was hand-extended ahead of application rather than generated —
+regenerate it for real the next time a working MCP/CLI connection is
+available, as a sanity check against the hand-written version.
 
 ### Re-run screening on a campaign
 
@@ -173,8 +174,9 @@ Phase 2") and it remains an open item.
 
 ## 7. Known gaps at the time of writing
 
-- Migrations 21-24 not applied to the live database (Supabase MCP
-  connector issue — see README).
+- `types.ts` was hand-extended rather than generated for migrations
+  21-25 (now applied) — regenerate for real and diff the next time a
+  working Supabase MCP/CLI connection is available.
 - No monitoring/error-tracking account configured — `src/lib/error-tracking.ts`
   logs structured JSON to stderr only; wiring a real APM provider is a
   documented extension point, not done.
