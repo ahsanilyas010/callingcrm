@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { importLeads } from "@/lib/connectors/pipeline";
 import type { NormalisedLead } from "@/lib/connectors/types";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { captureException } from "@/lib/error-tracking";
 
 // Section 6.4 — "Inbound web forms | Both | First-party consent | Highest
 // value... Build the inbound web form connector properly — it is the
@@ -97,7 +98,8 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    captureException(err, { route: "/api/leads/inbound", campaignId, dataSourceId });
     return NextResponse.json({ error: "Could not accept this submission." }, { status: 500 });
   }
 }

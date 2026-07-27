@@ -6,6 +6,7 @@ import { requireProfile } from "@/lib/auth/current-profile";
 import { getConnector, connectorRegistry } from "@/lib/connectors/registry";
 import { importLeads } from "@/lib/connectors/pipeline";
 import { parseVendorFile, normaliseVendorRow, type VendorCsvFieldMap } from "@/lib/connectors/vendor-csv";
+import { captureException } from "@/lib/error-tracking";
 import type { Json } from "@/lib/supabase/types";
 
 export interface ActionResult {
@@ -101,6 +102,7 @@ export async function runConnectorFetch(params: {
     return { ok: true, imported: outcome.imported, rejected: outcome.rejected };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Fetch failed.";
+    captureException(err, { action: "runConnectorFetch", dataSourceId: params.dataSourceId, runId: run.id });
     await supabase
       .from("source_fetch_runs")
       .update({ finished_at: new Date().toISOString(), status: "failed", error: message })
@@ -186,6 +188,7 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
     return { ok: true, imported: outcome.imported, rejected: outcome.rejected };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Import failed.";
+    captureException(err, { action: "uploadVendorCsv", dataSourceId, runId: run.id });
     await supabase
       .from("source_fetch_runs")
       .update({ finished_at: new Date().toISOString(), status: "failed", error: message })
