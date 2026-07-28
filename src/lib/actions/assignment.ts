@@ -11,12 +11,19 @@ export interface ActionResult {
 
 export async function assignLead(leadId: string, userId: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  // .select() matters here: an UPDATE that RLS filters to zero rows
+  // succeeds without an error, so without checking the returned rows this
+  // reported a clean success while changing nothing.
+  const { data, error } = await supabase
     .from("leads")
     .update({ assigned_to: userId, assigned_at: new Date().toISOString(), status: "assigned" })
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "That lead couldn't be assigned — it may not exist, or you may not have access to it." };
+  }
   revalidatePath("/admin/campaigns", "layout");
   return { ok: true };
 }
@@ -85,11 +92,14 @@ export async function autoAssignReadyLeads(campaignId: string): Promise<ActionRe
     for (const agent of stillNeedy) {
       if (poolIndex >= pool.length) break;
       const lead = pool[poolIndex++];
-      const { error } = await supabase
+      // Same reasoning as assignLead: count a row only if it actually
+      // came back updated, not merely "didn't error".
+      const { data: updated, error } = await supabase
         .from("leads")
         .update({ assigned_to: agent.userId, assigned_at: nowIso, status: "assigned" })
-        .eq("id", lead.id);
-      if (!error) {
+        .eq("id", lead.id)
+        .select("id");
+      if (!error && updated && updated.length > 0) {
         assignedCount++;
         agent.remaining--;
       }

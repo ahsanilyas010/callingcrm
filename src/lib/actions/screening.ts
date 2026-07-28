@@ -38,7 +38,7 @@ async function applyScreeningResult(params: {
   phoneToLeadId: Map<string, string>;
   result: ScreeningResult;
   screeningMaxAgeDays: number;
-}): Promise<{ screened: number; matched: number }> {
+}): Promise<{ screened: number; matched: number; suppressionFailures: string[] }> {
   const { supabase, campaignId, providerLabel, ranBy, phoneToLeadId, result, screeningMaxAgeDays } = params;
   const matchedSet = new Set(result.matched);
   const now = new Date();
@@ -58,9 +58,17 @@ async function applyScreeningResult(params: {
     .select("id")
     .single();
 
+  // A failure in the matched branch fails OPEN — the number stays
+  // dialable while the run reports it as suppressed. That is the single
+  // most expensive failure mode in this system, so these errors are
+  // collected and surfaced rather than discarded. (The unmatched branch
+  // fails closed: a lead that doesn't reach 'passed' simply stays
+  // unscreened and invisible to v_dialable_leads, which is safe.)
+  const suppressionFailures: string[] = [];
+
   for (const [phone, leadId] of phoneToLeadId) {
     if (matchedSet.has(phone)) {
-      await supabase.from("suppression_list").upsert(
+      const { error: suppressError } = await supabase.from("suppression_list").upsert(
         {
           phone_e164: phone,
           reason: PROVIDER_TO_SUPPRESSION_REASON[providerLabel] ?? "internal_optout",
@@ -70,10 +78,14 @@ async function applyScreeningResult(params: {
         },
         { onConflict: "phone_e164", ignoreDuplicates: true },
       );
-      await supabase
+      const { error: leadError } = await supabase
         .from("leads")
         .update({ do_not_call: true, status: "suppressed", screening_status: "blocked", dnc_reason: providerLabel })
         .eq("id", leadId);
+
+      if (suppressError || leadError) {
+        suppressionFailures.push(`${phone}: ${(suppressError ?? leadError)!.message}`);
+      }
     } else {
       await supabase
         .from("leads")
@@ -86,7 +98,7 @@ async function applyScreeningResult(params: {
     }
   }
 
-  return { screened: phoneToLeadId.size, matched: matchedSet.size };
+  return { screened: phoneToLeadId.size, matched: matchedSet.size, suppressionFailures };
 }
 
 async function loadUnscreenedPhones(
@@ -134,7 +146,15 @@ export async function runInternalScreening(campaignId: string): Promise<ActionRe
 
   revalidatePath("/admin/compliance");
   revalidatePath("/admin/campaigns");
-  return { ok: true, ...outcome };
+  const { suppressionFailures, ...counts } = outcome;
+  if (suppressionFailures.length > 0) {
+    return {
+      error:
+        `Screened ${counts.screened}, but ${suppressionFailures.length} matched number(s) could NOT be suppressed — ` +
+        `they may still be dialable. Fix and re-run before dialling: ${suppressionFailures.slice(0, 3).join("; ")}`,
+    };
+  }
+  return { ok: true, ...counts };
 }
 
 // ManualEvidenceProvider — upload a bureau's own response file (CSV/XLSX
@@ -196,5 +216,13 @@ export async function uploadManualScreeningEvidence(
 
   revalidatePath("/admin/compliance");
   revalidatePath("/admin/campaigns");
-  return { ok: true, ...outcome };
+  const { suppressionFailures, ...counts } = outcome;
+  if (suppressionFailures.length > 0) {
+    return {
+      error:
+        `Screened ${counts.screened}, but ${suppressionFailures.length} matched number(s) could NOT be suppressed — ` +
+        `they may still be dialable. Fix and re-run before dialling: ${suppressionFailures.slice(0, 3).join("; ")}`,
+    };
+  }
+  return { ok: true, ...counts };
 }

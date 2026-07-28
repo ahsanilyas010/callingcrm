@@ -157,6 +157,10 @@ export function Workspace({
         toast.success(`Saved — ${selected.label}`);
       }
 
+      if (result.warning) {
+        toast.warning(result.warning, { duration: 8000 });
+      }
+
       resetPanel();
       advanceQueue();
     });

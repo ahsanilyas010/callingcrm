@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { Activity, Radio } from "lucide-react";
@@ -5,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function LiveFloorPage() {
-  await requireProfile();
+  // Matches ADMIN_NAV's roles for /admin in lib/nav.ts — the nav already
+  // hides this from other roles, but the route was still reachable by
+  // typing the URL. (RLS scoped what they'd see to their own campaigns,
+  // so this was never a data leak — just an inconsistency.)
+  const profile = await requireProfile();
+  if (!["super_admin", "ops_manager", "team_lead"].includes(profile.role)) redirect("/");
+
   const supabase = await createClient();
 
   const { data: campaigns } = await supabase

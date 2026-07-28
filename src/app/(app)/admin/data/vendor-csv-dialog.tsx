@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,19 @@ export function VendorCsvDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // Both selects default to the first item, which is an empty string when
+  // the list is empty — that used to submit blank ids and come back as a
+  // generic "Campaign, data source and a file are required", with no hint
+  // that the real problem was missing prerequisite records.
+  const missingPrereq =
+    campaigns.length === 0 && dataSources.length === 0
+      ? "both"
+      : campaigns.length === 0
+        ? "campaigns"
+        : dataSources.length === 0
+          ? "dataSources"
+          : null;
+
   useEffect(() => {
     if (state.ok) {
       setOpen(false);
@@ -101,6 +114,19 @@ export function VendorCsvDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {missingPrereq && (
+          <div className="flex items-start gap-2 rounded-md bg-warning-tint px-3 py-2 text-xs text-warning">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              {missingPrereq === "both"
+                ? "You need at least one campaign and one non-connector data source before importing."
+                : missingPrereq === "campaigns"
+                  ? "No campaigns exist yet — create one in Campaigns first."
+                  : "No non-connector data source exists yet — add one with “Add data source” first, recording its lawful basis."}
+            </span>
+          </div>
+        )}
+
         <form action={formAction} className="flex flex-col gap-3">
           <input type="hidden" name="campaign_id" value={campaignId} />
           <input type="hidden" name="data_source_id" value={dataSourceId} />
@@ -109,9 +135,9 @@ export function VendorCsvDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Campaign</Label>
-              <Select value={campaignId} onValueChange={setCampaignId}>
+              <Select value={campaignId} onValueChange={setCampaignId} disabled={campaigns.length === 0}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={campaigns.length === 0 ? "No campaigns yet" : "Pick a campaign"} />
                 </SelectTrigger>
                 <SelectContent>
                   {campaigns.map((c) => (
@@ -124,9 +150,15 @@ export function VendorCsvDialog({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Data source (must be vendor-licensed with a lawful basis)</Label>
-              <Select value={dataSourceId} onValueChange={setDataSourceId}>
+              <Select
+                value={dataSourceId}
+                onValueChange={setDataSourceId}
+                disabled={dataSources.length === 0}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue
+                    placeholder={dataSources.length === 0 ? "No data sources yet" : "Pick a data source"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {dataSources.map((d) => (
@@ -219,7 +251,15 @@ export function VendorCsvDialog({
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <SubmitButton disabled={headers.length === 0 || !mapping.map_phone || mapping.map_phone === "__none"} />
+            <SubmitButton
+              disabled={
+                !campaignId ||
+                !dataSourceId ||
+                headers.length === 0 ||
+                !mapping.map_phone ||
+                mapping.map_phone === "__none"
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
