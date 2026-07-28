@@ -78,10 +78,17 @@ export async function changePassword(_prev: ActionResult, formData: FormData): P
     return { error: error.message };
   }
 
-  await supabase
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({ must_change_password: false, password_set_at: new Date().toISOString() })
     .eq("id", user!.id);
+
+  // The auth password already changed above — don't leave the user
+  // stuck on this screen with no explanation if the profile-side update
+  // is rejected (e.g. by guard_profile_self_update()'s RLS trigger).
+  if (profileError) {
+    return { error: `Password changed, but couldn't finish sign-in setup: ${profileError.message}` };
+  }
 
   await supabase.from("credential_events").insert({
     user_id: user!.id,

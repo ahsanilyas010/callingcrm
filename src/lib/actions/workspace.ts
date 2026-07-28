@@ -109,6 +109,8 @@ export interface SubmitCallResult {
   error?: string;
   ok?: boolean;
   suppressed?: boolean;
+  /** Set when the call committed but a non-critical follow-on step failed. */
+  warning?: string;
 }
 
 export async function submitCallAttempt(params: {
@@ -136,7 +138,7 @@ export async function submitCallAttempt(params: {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("followups").insert({
+      const { error: followupError } = await supabase.from("followups").insert({
         lead_id: params.leadId,
         campaign_id: params.campaignId,
         assigned_to: user.id,
@@ -146,6 +148,18 @@ export async function submitCallAttempt(params: {
         due_at_lead_local: params.callbackAt,
         note: params.notes || null,
       });
+
+      // The call itself is already committed by record_call_attempt, and
+      // the lead's next_action_at is set — so the callback isn't lost.
+      // But the follow-up tray would never show it, so say so rather than
+      // reporting a clean success the agent would take at face value.
+      if (followupError) {
+        return {
+          ok: true,
+          suppressed: params.dispositionCode === "connected_dnc",
+          warning: `Call logged and callback time saved, but it won't appear in your follow-up tray: ${followupError.message}`,
+        };
+      }
     }
   }
 
