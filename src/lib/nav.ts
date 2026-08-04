@@ -38,6 +38,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/attendance", label: "Attendance", icon: "CalendarCheck", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/compliance", label: "Compliance", icon: "ShieldCheck", roles: ["super_admin", "ops_manager"] },
   { href: "/admin/data", label: "Data", icon: "Database", roles: ["super_admin", "ops_manager"] },
+  { href: "/client", label: "Client reports", icon: "Building2", roles: ["super_admin", "ops_manager"] },
   { href: "/admin/security", label: "Security & audit", icon: "Lock", roles: ["super_admin"] },
 ];
 

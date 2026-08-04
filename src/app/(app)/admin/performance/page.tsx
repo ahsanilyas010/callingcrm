@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FunnelChart } from "./funnel-chart";
+import { FunnelChart } from "@/components/charts/funnel-chart";
 
 export default async function PerformancePage() {
   const profile = await requireProfile();

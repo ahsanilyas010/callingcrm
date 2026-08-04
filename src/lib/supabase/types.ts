@@ -1964,6 +1964,20 @@ export type Database = {
           unique_leads_touched: number
         }[]
       }
+      get_client_funnel: {
+        Args: { p_client_id?: string }
+        Returns: {
+          campaign_code: string
+          campaign_id: string
+          campaign_name: string
+          contacted: number
+          converted: number
+          dialable: number
+          loaded: number
+          market: string | null
+          qualified: number
+        }[]
+      }
       is_manager: { Args: never; Returns: boolean }
       my_team_id: { Args: never; Returns: string }
       my_team_members: { Args: never; Returns: string[] }
@@ -2090,6 +2104,17 @@ export type Database = {
         day: string | null
         talk_seconds: number | null
         unique_leads_touched: number | null
+      }
+      client_funnel_row: {
+        campaign_code: string | null
+        campaign_id: string | null
+        campaign_name: string | null
+        contacted: number | null
+        converted: number | null
+        dialable: number | null
+        loaded: number | null
+        market: string | null
+        qualified: number | null
       }
     }
   }
