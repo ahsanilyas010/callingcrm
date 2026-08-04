@@ -69,6 +69,15 @@ export async function sendLeadEmail(
   if (!lead) return { error: "Lead not found." };
   if (!lead.email) return { error: "This lead has no email address on file." };
 
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("clients(contact_email)")
+    .eq("id", lead.campaign_id)
+    .single();
+  const clientCc =
+    (campaign as { clients?: { contact_email: string | null } | null } | null)?.clients
+      ?.contact_email ?? undefined;
+
   const { data: suppressed } = await supabase
     .from("email_suppression")
     .select("email")
@@ -128,6 +137,7 @@ export async function sendLeadEmail(
     to: lead.email,
     from: `${fromName} <${fromEmail}>`,
     replyTo: template.reply_to ?? undefined,
+    cc: clientCc,
     subject,
     html,
   });
