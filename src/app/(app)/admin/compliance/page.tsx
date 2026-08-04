@@ -13,7 +13,9 @@ export default async function CompliancePage() {
   const supabase = await createClient();
   const [
     { data: entries, count },
-    { data: screeningCounts },
+    { count: passedCount },
+    { count: expiredCount },
+    { count: unscreenedCount },
     { count: outOfWindowCount },
     { data: campaigns },
     { data: screeningRuns },
@@ -23,7 +25,12 @@ export default async function CompliancePage() {
       .select("*, profiles(full_name)", { count: "exact" })
       .order("created_at", { ascending: false })
       .limit(50),
-    supabase.from("leads").select("screening_status"),
+    // head:true counts exactly, at any table size — a plain
+    // .select("screening_status") over every lead used to under-count
+    // silently past Supabase's default 1000-row page size.
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("screening_status", "passed"),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("screening_status", "expired"),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("screening_status", "unscreened"),
     supabase
       .from("call_attempts")
       .select("id", { count: "exact", head: true })
@@ -36,10 +43,11 @@ export default async function CompliancePage() {
       .limit(20),
   ]);
 
-  const counts = (screeningCounts ?? []).reduce<Record<string, number>>((acc, l) => {
-    acc[l.screening_status] = (acc[l.screening_status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const counts = {
+    passed: passedCount ?? 0,
+    expired: expiredCount ?? 0,
+    unscreened: unscreenedCount ?? 0,
+  };
 
   return (
     <div className="p-4">
