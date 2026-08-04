@@ -1,0 +1,66 @@
+import "server-only";
+import { createClient } from "@/lib/supabase/server";
+
+export interface ClientFunnelRow {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_code: string;
+  market: string | null;
+  loaded: number;
+  dialable: number;
+  contacted: number;
+  qualified: number;
+  converted: number;
+}
+
+export interface ClientFunnelResult {
+  clientName: string;
+  isManager: boolean;
+  rows: ClientFunnelRow[];
+}
+
+export type ClientFunnelOutcome =
+  | { ok: true; result: ClientFunnelResult }
+  | { ok: false; status: number; error: string };
+
+// Shared by the client dashboard page and its PDF export route — auth is
+// re-checked here rather than trusted from the caller, since the PDF
+// route is a separate entry point from the page. get_client_funnel()
+// self-scopes a client_viewer server-side, so clientIdParam only ever
+// takes effect for a manager previewing a specific client.
+export async function loadClientFunnel(clientIdParam: string | null): Promise<ClientFunnelOutcome> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, status: 401, error: "Not signed in." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, client_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || !["client_viewer", "super_admin", "ops_manager"].includes(profile.role)) {
+    return { ok: false, status: 403, error: "Not authorized." };
+  }
+
+  const isManager = profile.role === "super_admin" || profile.role === "ops_manager";
+  const targetClientId = isManager ? clientIdParam : null;
+
+  const { data: rows, error } = await supabase.rpc("get_client_funnel", {
+    p_client_id: targetClientId ?? undefined,
+  });
+  if (error) return { ok: false, status: 500, error: error.message };
+
+  let clientName = "All clients";
+  const lookupId = isManager ? targetClientId : profile.client_id;
+  if (lookupId) {
+    const { data: client } = await supabase.from("clients").select("name").eq("id", lookupId).single();
+    clientName = client?.name ?? "Unknown client";
+  } else if (!isManager) {
+    clientName = "No client linked to this account";
+  }
+
+  return { ok: true, result: { clientName, isManager, rows: (rows as ClientFunnelRow[]) ?? [] } };
+}
