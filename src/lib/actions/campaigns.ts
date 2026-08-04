@@ -65,6 +65,7 @@ export async function createClientRecord(
   const supabase = await createClient();
   const name = String(formData.get("name") ?? "").trim();
   const country = String(formData.get("country") ?? "").trim() || null;
+  const contactEmail = String(formData.get("contact_email") ?? "").trim() || null;
   const isDataController = formData.get("is_data_controller") === "on";
 
   if (!name) return { error: "Client name is required." };
@@ -72,10 +73,45 @@ export async function createClientRecord(
   const { error } = await supabase.from("clients").insert({
     name,
     country,
+    contact_email: contactEmail,
     is_data_controller: isDataController,
   });
 
   if (error) return { error: error.message };
+
+  revalidatePath("/admin/campaigns");
+  return { ok: true };
+}
+
+export async function updateClientRecord(
+  _prev: CreateClientResult,
+  formData: FormData,
+): Promise<CreateClientResult> {
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const country = String(formData.get("country") ?? "").trim() || null;
+  const contactEmail = String(formData.get("contact_email") ?? "").trim() || null;
+  const isDataController = formData.get("is_data_controller") === "on";
+
+  if (!id) return { error: "Missing client id." };
+  if (!name) return { error: "Client name is required." };
+
+  const { data, error } = await supabase
+    .from("clients")
+    .update({
+      name,
+      country,
+      contact_email: contactEmail,
+      is_data_controller: isDataController,
+    })
+    .eq("id", id)
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "Client not found, or you don't have access to it." };
+  }
 
   revalidatePath("/admin/campaigns");
   return { ok: true };

@@ -4,6 +4,7 @@ export interface SendEmailParams {
   to: string;
   from: string;
   replyTo?: string;
+  cc?: string;
   subject: string;
   html: string;
   text?: string;
@@ -43,6 +44,7 @@ class ResendProvider implements EmailProvider {
         body: JSON.stringify({
           from: params.from,
           to: [params.to],
+          cc: params.cc ? [params.cc] : undefined,
           reply_to: params.replyTo,
           subject: params.subject,
           html: params.html,

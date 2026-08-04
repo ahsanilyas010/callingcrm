@@ -4,8 +4,8 @@ import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Building2 } from "lucide-react";
-import { createClientRecord, type CreateClientResult } from "@/lib/actions/campaigns";
+import { Loader2, Pencil } from "lucide-react";
+import { updateClientRecord, type CreateClientResult } from "@/lib/actions/campaigns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,14 +25,22 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add client"}
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save changes"}
     </Button>
   );
 }
 
-export function CreateClientDialog() {
+interface ClientRow {
+  id: string;
+  name: string;
+  country: string | null;
+  contact_email: string | null;
+  is_data_controller: boolean;
+}
+
+export function EditClientDialog({ client }: { client: ClientRow }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useActionState(createClientRecord, initialState);
+  const [state, formAction] = useActionState(updateClientRecord, initialState);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,36 +52,44 @@ export function CreateClientDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        <Building2 className="h-4 w-4" /> Add client
+      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label={`Edit ${client.name}`}>
+        <Pencil className="h-3.5 w-3.5" />
       </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add client</DialogTitle>
+          <DialogTitle>Edit client</DialogTitle>
           <DialogDescription>
-            Who is this campaign run for. Confirm data-controller status and get the DPA in
-            writing before go-live.
+            The contact email here is CC&rsquo;d on every email an agent sends to this
+            client&rsquo;s leads.
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="flex flex-col gap-3">
+          <input type="hidden" name="id" value={client.id} />
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="client_name">Legal entity name</Label>
-            <Input id="client_name" name="name" required />
+            <Label htmlFor={`edit_client_name_${client.id}`}>Legal entity name</Label>
+            <Input id={`edit_client_name_${client.id}`} name="name" defaultValue={client.name} required />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="country">Country</Label>
-            <Input id="country" name="country" placeholder="United Kingdom" />
+            <Label htmlFor={`edit_country_${client.id}`}>Country</Label>
+            <Input
+              id={`edit_country_${client.id}`}
+              name="country"
+              defaultValue={client.country ?? ""}
+              placeholder="United Kingdom"
+            />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contact_email">Client contact email</Label>
-            <Input id="contact_email" name="contact_email" type="email" placeholder="contact@client.com" />
-            <p className="text-[11px] text-muted">
-              CC&rsquo;d on every email an agent sends to this client&rsquo;s leads. Leave blank to
-              skip.
-            </p>
+            <Label htmlFor={`edit_contact_email_${client.id}`}>Client contact email</Label>
+            <Input
+              id={`edit_contact_email_${client.id}`}
+              name="contact_email"
+              type="email"
+              defaultValue={client.contact_email ?? ""}
+              placeholder="contact@client.com"
+            />
           </div>
           <label className="flex items-center gap-2 text-xs text-muted">
-            <Switch name="is_data_controller" />
+            <Switch name="is_data_controller" defaultChecked={client.is_data_controller} />
             Client is the data controller (ABPO is the processor)
           </label>
 

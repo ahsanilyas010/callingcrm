@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateCampaignDialog } from "./create-campaign-dialog";
 import { CreateClientDialog } from "./create-client-dialog";
+import { EditClientDialog } from "./edit-client-dialog";
 
 export default async function CampaignsPage() {
   const profile = await requireProfile();
@@ -106,8 +107,10 @@ export default async function CampaignsPage() {
                 <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
                   <th className="px-3 py-2 font-medium">Name</th>
                   <th className="px-3 py-2 font-medium">Country</th>
+                  <th className="px-3 py-2 font-medium">Contact email</th>
                   <th className="px-3 py-2 font-medium">Controller</th>
                   <th className="px-3 py-2 font-medium">DPA signed</th>
+                  <th className="px-3 py-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
@@ -115,6 +118,9 @@ export default async function CampaignsPage() {
                   <tr key={c.id} className="h-[38px] border-b border-line last:border-0">
                     <td className="px-3 py-1.5 font-medium text-ink">{c.name}</td>
                     <td className="px-3 py-1.5 text-muted">{c.country ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-muted">
+                      {c.contact_email ?? <span className="text-warning">Not set</span>}
+                    </td>
                     <td className="px-3 py-1.5">
                       {c.is_data_controller ? (
                         <Badge variant="blue">Client</Badge>
@@ -127,11 +133,14 @@ export default async function CampaignsPage() {
                         <span className="text-warning">Not on file</span>
                       )}
                     </td>
+                    <td className="px-3 py-1.5 text-right">
+                      <EditClientDialog client={c} />
+                    </td>
                   </tr>
                 ))}
                 {(clients ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-sm text-muted">
+                    <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted">
                       No clients yet.
                     </td>
                   </tr>
