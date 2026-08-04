@@ -9,6 +9,64 @@ export interface ActionResult {
   assigned?: number;
 }
 
+// Section 6.3 — putting an agent on a campaign's roster. This is a
+// separate step from assigning individual leads: campaign_assignments is
+// what auto-top-up reads to know who to distribute leads to, and what
+// getAssignedCampaigns() (workspace.ts) reads to decide which campaigns
+// an agent even sees leads from.
+export async function assignAgentToCampaign(
+  campaignId: string,
+  userId: string,
+  dailyTarget: number,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("campaign_assignments")
+    .upsert(
+      { campaign_id: campaignId, user_id: userId, daily_target: dailyTarget },
+      { onConflict: "campaign_id,user_id" },
+    );
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/campaigns", "layout");
+  return { ok: true };
+}
+
+export async function removeAgentFromCampaign(campaignId: string, userId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  // Leads already assigned to this agent on this campaign stay assigned —
+  // pulling someone off a roster shouldn't silently orphan what they were
+  // already working. Free them up separately if that's the intent.
+  const { error } = await supabase
+    .from("campaign_assignments")
+    .delete()
+    .eq("campaign_id", campaignId)
+    .eq("user_id", userId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/campaigns", "layout");
+  return { ok: true };
+}
+
+// Section 3.5 — a campaign only shows up as "Live" and only feeds
+// v_dialable_leads' downstream UI cues once someone deliberately flips
+// this; it never happens implicitly on creation.
+export async function setCampaignActive(campaignId: string, isActive: boolean): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("campaigns")
+    .update({ is_active: isActive })
+    .eq("id", campaignId)
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "Campaign not found, or you don't have access to it." };
+  }
+  revalidatePath("/admin/campaigns", "layout");
+  return { ok: true };
+}
+
 export async function assignLead(leadId: string, userId: string): Promise<ActionResult> {
   const supabase = await createClient();
   // .select() matters here: an UPDATE that RLS filters to zero rows

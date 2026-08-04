@@ -11,6 +11,8 @@ import { LeadRowActions } from "./lead-row-actions";
 import { AutoAssignButton } from "./auto-assign-button";
 import { SendEmailButton } from "./send-email-button";
 import { CreateTemplateDialog } from "./create-template-dialog";
+import { ManageAgentsDialog } from "./manage-agents-dialog";
+import { ActivateToggle } from "./activate-toggle";
 
 const SCREENING_BADGE: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
   passed: "confirm",
@@ -30,27 +32,42 @@ export default async function CampaignDetailPage({
   if (!["super_admin", "ops_manager"].includes(profile.role)) redirect("/");
 
   const supabase = await createClient();
-  const [{ data: campaign }, { data: leads }, { data: dataSources }, { data: agents }, { data: templates }] =
-    await Promise.all([
-      supabase.from("campaigns").select("*, clients(name)").eq("id", id).single(),
-      supabase
-        .from("leads")
-        .select("*, profiles(full_name)")
-        .eq("campaign_id", id)
-        .order("created_at", { ascending: false })
-        .limit(200),
-      supabase.from("data_sources").select("*").eq("is_active", true).order("name"),
-      supabase.from("campaign_assignments").select("user_id, profiles(full_name)").eq("campaign_id", id),
-      supabase
-        .from("email_templates")
-        .select("*")
-        .or(`campaign_id.is.null,campaign_id.eq.${id}`)
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    { data: campaign },
+    { data: leads },
+    { data: dataSources },
+    { data: agents },
+    { data: templates },
+    { data: agentRoster },
+  ] = await Promise.all([
+    supabase.from("campaigns").select("*, clients(name)").eq("id", id).single(),
+    supabase
+      .from("leads")
+      .select("*, profiles(full_name)")
+      .eq("campaign_id", id)
+      .order("created_at", { ascending: false })
+      .limit(200),
+    supabase.from("data_sources").select("*").eq("is_active", true).order("name"),
+    supabase
+      .from("campaign_assignments")
+      .select("user_id, daily_target, profiles(full_name)")
+      .eq("campaign_id", id),
+    supabase
+      .from("email_templates")
+      .select("*")
+      .or(`campaign_id.is.null,campaign_id.eq.${id}`)
+      .order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, full_name").eq("role", "agent").eq("is_active", true).order("full_name"),
+  ]);
 
   if (!campaign) notFound();
 
   const templateOptions = (templates ?? []).map((t) => ({ id: t.id, name: t.name }));
+  const assignedAgents = (agents ?? []).map((a) => ({
+    id: a.user_id,
+    name: (a as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
+    dailyTarget: a.daily_target,
+  }));
 
   return (
     <div className="p-4">
@@ -66,11 +83,20 @@ export default async function CampaignDetailPage({
           <h2 className="flex items-center gap-2 text-lg font-semibold text-ink">
             {campaign.name}
             <Badge variant="blue">{campaign.market}</Badge>
+            {campaign.is_active ? (
+              <Badge variant="confirm">Live</Badge>
+            ) : (
+              <Badge variant="neutral">Not activated</Badge>
+            )}
           </h2>
           <p className="tabular text-xs text-muted">
             {campaign.code} · {(campaign as { clients?: { name: string } | null }).clients?.name} ·{" "}
             {(agents ?? []).length} agents assigned
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ManageAgentsDialog campaignId={campaign.id} assigned={assignedAgents} roster={agentRoster ?? []} />
+          <ActivateToggle campaignId={campaign.id} isActive={campaign.is_active} />
         </div>
       </div>
 
