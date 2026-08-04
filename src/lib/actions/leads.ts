@@ -58,7 +58,10 @@ export async function createManualLead(
   let phoneE164: string;
   try {
     const parsed = parsePhoneNumberWithError(phoneRaw, countryHint as never);
-    if (!parsed.isValid()) throw new Error("invalid");
+    // See pipeline.ts — isPossible() rather than isValid() so a real but
+    // unusually-formatted number isn't rejected at import time. Suppression
+    // screening below is unconditional and unaffected by this.
+    if (!parsed.isPossible()) throw new Error("invalid");
     phoneE164 = parsed.number;
   } catch {
     return { error: `"${phoneRaw}" doesn't parse as a valid phone number.` };

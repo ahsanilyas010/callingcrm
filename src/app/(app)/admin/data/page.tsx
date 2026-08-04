@@ -20,7 +20,7 @@ export default async function DataPage() {
   const [{ data: dataSources }, { data: campaigns }, { data: fetchRuns }, { data: performance }] =
     await Promise.all([
       supabase.from("data_sources").select("*").order("created_at", { ascending: false }),
-      supabase.from("campaigns").select("id, name, code").order("name"),
+      supabase.from("campaigns").select("id, name, code, market").order("name"),
       supabase
         .from("source_fetch_runs")
         .select("*, data_sources(name), campaigns(name, code), profiles(full_name)")
