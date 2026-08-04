@@ -51,7 +51,13 @@ export async function importLeads(params: {
     let phoneE164: string;
     try {
       const parsed = parsePhoneNumberWithError(record.phoneRaw, record.countryHint as never);
-      if (!parsed.isValid()) throw new Error("invalid");
+      // isPossible() (length/shape only) rather than isValid() (matches a
+      // real allocated range) — vendor lists are messy and a real number
+      // outside libphonenumber's known ranges shouldn't be thrown away at
+      // import time. This only affects whether a number can be normalised
+      // to E.164; suppression/DNC screening below is unconditional and
+      // completely separate from this check.
+      if (!parsed.isPossible()) throw new Error("invalid");
       phoneE164 = parsed.number;
     } catch {
       outcome.rejected += 1;

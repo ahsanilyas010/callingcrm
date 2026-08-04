@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
+import { marketToCountryHint } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +55,7 @@ export function VendorCsvDialog({
   campaigns,
   dataSources,
 }: {
-  campaigns: { id: string; name: string; code: string }[];
+  campaigns: { id: string; name: string; code: string; market: string | null }[];
   dataSources: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
@@ -63,9 +64,21 @@ export function VendorCsvDialog({
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [campaignId, setCampaignId] = useState(campaigns[0]?.id ?? "");
   const [dataSourceId, setDataSourceId] = useState(dataSources[0]?.id ?? "");
-  const [country, setCountry] = useState("GB");
+  const [country, setCountry] = useState(marketToCountryHint(campaigns[0]?.market));
+  const [countryTouched, setCountryTouched] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Default the phone-parsing country to whichever market the selected
+  // campaign runs — this is what was silently defaulting to GB for every
+  // campaign regardless of market, rejecting most non-UK/US numbers (a
+  // Pakistan campaign's +92 leads included) as "invalid". Once the operator
+  // touches the selector directly, stop overriding their choice.
+  useEffect(() => {
+    if (countryTouched) return;
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    if (campaign) setCountry(marketToCountryHint(campaign.market));
+  }, [campaignId, campaigns, countryTouched]);
 
   // Both selects default to the first item, which is an empty string when
   // the list is empty — that used to submit blank ids and come back as a
@@ -173,13 +186,20 @@ export function VendorCsvDialog({
 
           <div className="flex flex-col gap-1.5">
             <Label>Country (for phone parsing)</Label>
-            <Select value={country} onValueChange={setCountry}>
+            <Select
+              value={country}
+              onValueChange={(v) => {
+                setCountry(v);
+                setCountryTouched(true);
+              }}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="GB">GB</SelectItem>
+                <SelectItem value="GB">GB — UK</SelectItem>
                 <SelectItem value="US">US</SelectItem>
+                <SelectItem value="PK">PK — Pakistan</SelectItem>
               </SelectContent>
             </Select>
           </div>

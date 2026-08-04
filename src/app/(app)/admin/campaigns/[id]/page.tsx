@@ -109,7 +109,11 @@ export default async function CampaignDetailPage({
         <TabsContent value="leads">
           <div className="mb-3 flex justify-end gap-2">
             <AutoAssignButton campaignId={campaign.id} />
-            <AddLeadDialog campaignId={campaign.id} dataSources={dataSources ?? []} />
+            <AddLeadDialog
+              campaignId={campaign.id}
+              campaignMarket={campaign.market}
+              dataSources={dataSources ?? []}
+            />
           </div>
 
           <div className="overflow-hidden rounded-lg border border-line bg-white">

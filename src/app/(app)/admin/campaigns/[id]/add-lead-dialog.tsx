@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, UserPlus } from "lucide-react";
 import { createManualLead, type ActionResult } from "@/lib/actions/leads";
+import { marketToCountryHint } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,11 +40,14 @@ function SubmitButton() {
 
 export function AddLeadDialog({
   campaignId,
+  campaignMarket,
   dataSources,
 }: {
   campaignId: string;
+  campaignMarket: string | null;
   dataSources: { id: string; name: string; lawful_basis: string }[];
 }) {
+  const defaultCountry = marketToCountryHint(campaignMarket);
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createManualLead, initialState);
   const [dataSourceId, setDataSourceId] = useState("");
@@ -116,7 +120,7 @@ export function AddLeadDialog({
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="country">Region</Label>
-                <Input id="country" name="country" defaultValue="GB" placeholder="GB / US" />
+                <Input id="country" name="country" defaultValue={defaultCountry} placeholder="GB / US / PK" />
               </div>
             </div>
 
