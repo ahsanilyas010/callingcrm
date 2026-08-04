@@ -25,7 +25,12 @@ export default async function PeoplePage() {
   const [{ data: people }, { data: teams }, { data: clients }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("*, teams(name)")
+      // profiles.team_id -> teams.id AND teams.team_lead_id -> profiles.id
+      // both exist, so an unqualified `teams(name)` embed is ambiguous and
+      // PostgREST rejects the whole query — silently rendering as "0 people"
+      // since the error was never checked. Same fix pattern already used
+      // for profiles embeds on audit_log/credential_events.
+      .select("*, teams!profiles_team_id_fkey(name)")
       .order("full_name"),
     supabase.from("teams").select("id, name").order("name"),
     supabase.from("clients").select("id, name").order("name"),
