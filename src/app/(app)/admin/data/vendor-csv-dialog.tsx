@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
 import { marketToCountryHint } from "@/lib/phone";
+import { guessColumnMapping } from "@/lib/vendor-csv-auto-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +63,7 @@ export function VendorCsvDialog({
   const [state, formAction] = useActionState(uploadVendorCsv, initialState);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [autoMapped, setAutoMapped] = useState(false);
   const [campaignId, setCampaignId] = useState(campaigns[0]?.id ?? "");
   const [dataSourceId, setDataSourceId] = useState(dataSources[0]?.id ?? "");
   const [country, setCountry] = useState(marketToCountryHint(campaigns[0]?.market));
@@ -98,6 +100,7 @@ export function VendorCsvDialog({
       setOpen(false);
       setHeaders([]);
       setMapping({});
+      setAutoMapped(false);
       router.refresh();
     }
   }, [state.ok, router]);
@@ -110,7 +113,11 @@ export function VendorCsvDialog({
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
-    setHeaders(rows.length > 0 ? Object.keys(rows[0]) : []);
+    const fileHeaders = rows.length > 0 ? Object.keys(rows[0]) : [];
+    setHeaders(fileHeaders);
+    const guessed = guessColumnMapping(fileHeaders);
+    setMapping(guessed);
+    setAutoMapped(Object.keys(guessed).length > 0);
   }
 
   return (
@@ -219,7 +226,14 @@ export function VendorCsvDialog({
 
           {headers.length > 0 && (
             <div className="rounded-md border border-line p-3">
-              <p className="mb-2 text-xs font-medium text-ink">Map columns</p>
+              <p className="mb-2 text-xs font-medium text-ink">
+                Map columns
+                {autoMapped && (
+                  <span className="ml-1.5 font-normal text-muted">
+                    — guessed from your file&rsquo;s headers, review before importing
+                  </span>
+                )}
+              </p>
               <div className="grid grid-cols-2 gap-2.5">
                 {MAP_FIELDS.map((f) => (
                   <div key={f.key} className="flex flex-col gap-1">
