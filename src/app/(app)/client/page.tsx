@@ -4,9 +4,28 @@ import { requireProfile } from "@/lib/auth/current-profile";
 import { createClient } from "@/lib/supabase/server";
 import { loadClientFunnel } from "@/lib/reports/client-funnel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import { ClientSelector } from "./client-selector";
+
+const CATEGORY_BADGE: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
+  connected_positive: "confirm",
+  connected_neutral: "blue",
+  connected_negative: "warning",
+  no_contact: "neutral",
+  invalid: "neutral",
+  compliance: "danger",
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  connected_positive: "Positive",
+  connected_neutral: "Neutral",
+  connected_negative: "Negative",
+  no_contact: "No contact",
+  invalid: "Invalid",
+  compliance: "Compliance",
+};
 
 export default async function ClientReportsPage({
   searchParams,
@@ -41,7 +60,9 @@ export default async function ClientReportsPage({
     );
   }
 
-  const { clientName, rows } = outcome.result;
+  const { clientName, rows, dispositions } = outcome.result;
+  const totalAttempts = dispositions.reduce((sum, d) => sum + d.attempts, 0);
+  const distinctCampaigns = new Set(dispositions.map((d) => d.campaign_id)).size;
   const totals = rows.reduce(
     (acc, r) => ({
       loaded: acc.loaded + r.loaded,
@@ -126,6 +147,56 @@ export default async function ClientReportsPage({
                 />
               ))}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4 animate-slide-up">
+        <CardHeader>
+          <CardTitle>Agent responses</CardTitle>
+          <p className="text-xs text-muted">
+            Every outcome an agent has logged against your leads — {totalAttempts} call attempt
+            {totalAttempts === 1 ? "" : "s"} in total. Never a transcript or note, only the
+            structured response category.
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {dispositions.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted">No calls logged yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
+                  {distinctCampaigns > 1 && <th className="px-4 py-2 font-medium">Campaign</th>}
+                  <th className="px-4 py-2 font-medium">Response</th>
+                  <th className="px-4 py-2 font-medium">Category</th>
+                  <th className="px-4 py-2 font-medium text-right">Attempts</th>
+                  <th className="px-4 py-2 font-medium text-right">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dispositions.map((d) => (
+                  <tr
+                    key={`${d.campaign_id}-${d.disposition_code}`}
+                    className="h-[38px] border-b border-line last:border-0"
+                  >
+                    {distinctCampaigns > 1 && (
+                      <td className="px-4 py-1.5 text-xs text-muted">{d.campaign_code}</td>
+                    )}
+                    <td className="px-4 py-1.5 font-medium text-ink">{d.disposition_label}</td>
+                    <td className="px-4 py-1.5">
+                      <Badge variant={CATEGORY_BADGE[d.category] ?? "neutral"}>
+                        {CATEGORY_LABEL[d.category] ?? d.category}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-1.5 tabular text-right">{d.attempts}</td>
+                    <td className="px-4 py-1.5 tabular text-right text-muted">
+                      {totalAttempts > 0 ? `${Math.round((d.attempts / totalAttempts) * 100)}%` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </CardContent>
       </Card>

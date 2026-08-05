@@ -1964,6 +1964,18 @@ export type Database = {
           unique_leads_touched: number
         }[]
       }
+      get_client_dispositions: {
+        Args: { p_client_id?: string }
+        Returns: {
+          attempts: number
+          campaign_code: string
+          campaign_id: string
+          campaign_name: string
+          category: string
+          disposition_code: string
+          disposition_label: string
+        }[]
+      }
       get_client_funnel: {
         Args: { p_client_id?: string }
         Returns: {
@@ -2104,6 +2116,15 @@ export type Database = {
         day: string | null
         talk_seconds: number | null
         unique_leads_touched: number | null
+      }
+      client_disposition_row: {
+        attempts: number | null
+        campaign_code: string | null
+        campaign_id: string | null
+        campaign_name: string | null
+        category: string | null
+        disposition_code: string | null
+        disposition_label: string | null
       }
       client_funnel_row: {
         campaign_code: string | null

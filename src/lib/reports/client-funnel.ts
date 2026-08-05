@@ -13,10 +13,21 @@ export interface ClientFunnelRow {
   converted: number;
 }
 
+export interface ClientDispositionRow {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_code: string;
+  disposition_code: string;
+  disposition_label: string;
+  category: string;
+  attempts: number;
+}
+
 export interface ClientFunnelResult {
   clientName: string;
   isManager: boolean;
   rows: ClientFunnelRow[];
+  dispositions: ClientDispositionRow[];
 }
 
 export type ClientFunnelOutcome =
@@ -25,9 +36,10 @@ export type ClientFunnelOutcome =
 
 // Shared by the client dashboard page and its PDF export route — auth is
 // re-checked here rather than trusted from the caller, since the PDF
-// route is a separate entry point from the page. get_client_funnel()
-// self-scopes a client_viewer server-side, so clientIdParam only ever
-// takes effect for a manager previewing a specific client.
+// route is a separate entry point from the page. get_client_funnel() and
+// get_client_dispositions() both self-scope a client_viewer server-side,
+// so clientIdParam only ever takes effect for a manager previewing a
+// specific client.
 export async function loadClientFunnel(clientIdParam: string | null): Promise<ClientFunnelOutcome> {
   const supabase = await createClient();
   const {
@@ -48,10 +60,12 @@ export async function loadClientFunnel(clientIdParam: string | null): Promise<Cl
   const isManager = profile.role === "super_admin" || profile.role === "ops_manager";
   const targetClientId = isManager ? clientIdParam : null;
 
-  const { data: rows, error } = await supabase.rpc("get_client_funnel", {
-    p_client_id: targetClientId ?? undefined,
-  });
+  const [{ data: rows, error }, { data: dispositions, error: dispositionsError }] = await Promise.all([
+    supabase.rpc("get_client_funnel", { p_client_id: targetClientId ?? undefined }),
+    supabase.rpc("get_client_dispositions", { p_client_id: targetClientId ?? undefined }),
+  ]);
   if (error) return { ok: false, status: 500, error: error.message };
+  if (dispositionsError) return { ok: false, status: 500, error: dispositionsError.message };
 
   let clientName = "All clients";
   const lookupId = isManager ? targetClientId : profile.client_id;
@@ -62,5 +76,13 @@ export async function loadClientFunnel(clientIdParam: string | null): Promise<Cl
     clientName = "No client linked to this account";
   }
 
-  return { ok: true, result: { clientName, isManager, rows: (rows as ClientFunnelRow[]) ?? [] } };
+  return {
+    ok: true,
+    result: {
+      clientName,
+      isManager,
+      rows: (rows as ClientFunnelRow[]) ?? [],
+      dispositions: (dispositions as ClientDispositionRow[]) ?? [],
+    },
+  };
 }
