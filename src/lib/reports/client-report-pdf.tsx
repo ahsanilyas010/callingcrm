@@ -38,9 +38,25 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, height: 10, backgroundColor: "#f0f2f5", borderRadius: 2 },
   barFill: { height: 10, backgroundColor: BRAND_BLUE, borderRadius: 2 },
   stageValue: { width: 40, fontSize: 9, textAlign: "right", fontFamily: "Helvetica-Bold" },
+  sectionTitle: { fontSize: 12, fontFamily: "Helvetica-Bold", marginTop: 8, marginBottom: 8 },
+  table: { borderWidth: 1, borderColor: LINE, borderRadius: 4 },
+  tableHeaderRow: { flexDirection: "row", backgroundColor: "#f7f8fa", borderBottomWidth: 1, borderBottomColor: LINE },
+  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: LINE },
+  tableCellHeader: { flex: 1, fontSize: 8, color: MUTED, padding: 6, textTransform: "uppercase" },
+  tableCell: { flex: 1, fontSize: 9, padding: 6 },
+  tableCellRight: { flex: 1, fontSize: 9, padding: 6, textAlign: "right" },
   footer: { position: "absolute", bottom: 24, left: 36, right: 36, fontSize: 8, color: MUTED },
   footerRule: { borderTopWidth: 1, borderTopColor: LINE, marginBottom: 6 },
 });
+
+const CATEGORY_LABEL: Record<string, string> = {
+  connected_positive: "Positive",
+  connected_neutral: "Neutral",
+  connected_negative: "Negative",
+  no_contact: "No contact",
+  invalid: "Invalid",
+  compliance: "Compliance",
+};
 
 function Mark() {
   return (
@@ -65,7 +81,9 @@ function StageBar({ label, value, max }: { label: string; value: number; max: nu
   );
 }
 
-export function ClientReportDocument({ clientName, rows }: ClientFunnelResult) {
+export function ClientReportDocument({ clientName, rows, dispositions }: ClientFunnelResult) {
+  const totalAttempts = dispositions.reduce((sum, d) => sum + d.attempts, 0);
+  const distinctCampaigns = new Set(dispositions.map((d) => d.campaign_id)).size;
   const totals = rows.reduce(
     (acc, r) => ({
       loaded: acc.loaded + r.loaded,
@@ -135,6 +153,30 @@ export function ClientReportDocument({ clientName, rows }: ClientFunnelResult) {
               <StageBar label="Converted" value={r.converted} max={r.loaded} />
             </View>
           ))
+        )}
+
+        {dispositions.length > 0 && (
+          <View wrap={false}>
+            <Text style={styles.sectionTitle}>
+              Agent responses — {totalAttempts} call attempt{totalAttempts === 1 ? "" : "s"}
+            </Text>
+            <View style={styles.table}>
+              <View style={styles.tableHeaderRow}>
+                {distinctCampaigns > 1 && <Text style={styles.tableCellHeader}>Campaign</Text>}
+                <Text style={[styles.tableCellHeader, { flex: 2 }]}>Response</Text>
+                <Text style={styles.tableCellHeader}>Category</Text>
+                <Text style={styles.tableCellHeader}>Attempts</Text>
+              </View>
+              {dispositions.map((d) => (
+                <View key={`${d.campaign_id}-${d.disposition_code}`} style={styles.tableRow}>
+                  {distinctCampaigns > 1 && <Text style={styles.tableCell}>{d.campaign_code}</Text>}
+                  <Text style={[styles.tableCell, { flex: 2 }]}>{d.disposition_label}</Text>
+                  <Text style={styles.tableCell}>{CATEGORY_LABEL[d.category] ?? d.category}</Text>
+                  <Text style={styles.tableCellRight}>{d.attempts}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         )}
 
         <View style={styles.footer} fixed>
