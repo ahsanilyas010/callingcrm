@@ -22,7 +22,21 @@ export type VendorCsvFieldMap = Partial<
     | "addressLine2"
     | "city"
     | "region"
-    | "postcode",
+    | "postcode"
+    // Project-context fields — no dedicated leads column, so these land in
+    // leads.custom instead. Matches the planning/construction-lead sheet
+    // format (Council, Project Type, Decision, Portal URL, ...) that
+    // doesn't fit the generic contact schema above.
+    | "council"
+    | "projectName"
+    | "projectType"
+    | "units"
+    | "summary"
+    | "decision"
+    | "decisionDate"
+    | "contactNameAddress"
+    | "portalUrl"
+    | "sourceNotes",
     string
   >
 >;
@@ -52,6 +66,21 @@ export function normaliseVendorRow(
   const phoneRaw = get(fieldMap.phone);
   if (!phoneRaw) return null;
 
+  const custom: Record<string, string> = {};
+  const setCustom = (key: string, value?: string) => {
+    if (value) custom[key] = value;
+  };
+  setCustom("council", get(fieldMap.council));
+  setCustom("project_name", get(fieldMap.projectName));
+  setCustom("project_type", get(fieldMap.projectType));
+  setCustom("units", get(fieldMap.units));
+  setCustom("summary", get(fieldMap.summary));
+  setCustom("decision", get(fieldMap.decision));
+  setCustom("decision_date", get(fieldMap.decisionDate));
+  setCustom("contact_name_address", get(fieldMap.contactNameAddress));
+  setCustom("portal_url", get(fieldMap.portalUrl));
+  setCustom("source_notes", get(fieldMap.sourceNotes));
+
   return {
     externalRef: get(fieldMap.externalRef),
     firstName: get(fieldMap.firstName),
@@ -65,5 +94,6 @@ export function normaliseVendorRow(
     city: get(fieldMap.city),
     region: get(fieldMap.region),
     postcode: get(fieldMap.postcode),
+    custom: Object.keys(custom).length > 0 ? custom : undefined,
   };
 }

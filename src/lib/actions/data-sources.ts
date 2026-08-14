@@ -143,6 +143,16 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
     region: String(formData.get("map_region") ?? "") || undefined,
     postcode: String(formData.get("map_postcode") ?? "") || undefined,
     externalRef: String(formData.get("map_external_ref") ?? "") || undefined,
+    council: String(formData.get("map_council") ?? "") || undefined,
+    projectName: String(formData.get("map_project_name") ?? "") || undefined,
+    projectType: String(formData.get("map_project_type") ?? "") || undefined,
+    units: String(formData.get("map_units") ?? "") || undefined,
+    summary: String(formData.get("map_summary") ?? "") || undefined,
+    decision: String(formData.get("map_decision") ?? "") || undefined,
+    decisionDate: String(formData.get("map_decision_date") ?? "") || undefined,
+    contactNameAddress: String(formData.get("map_contact_name_address") ?? "") || undefined,
+    portalUrl: String(formData.get("map_portal_url") ?? "") || undefined,
+    sourceNotes: String(formData.get("map_source_notes") ?? "") || undefined,
   };
   if (!fieldMap.phone) return { error: "A phone-number column mapping is required." };
 
