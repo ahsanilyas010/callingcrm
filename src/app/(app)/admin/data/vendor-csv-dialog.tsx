@@ -29,10 +29,11 @@ import {
 
 const initialState: ActionResult = {};
 
-const MAP_FIELDS: { key: string; label: string; required?: boolean }[] = [
+const CONTACT_FIELDS: { key: string; label: string; required?: boolean }[] = [
   { key: "map_phone", label: "Phone", required: true },
   { key: "map_first_name", label: "First name" },
   { key: "map_last_name", label: "Last name" },
+  { key: "map_contact_name_address", label: "Contact name & address" },
   { key: "map_company_name", label: "Company" },
   { key: "map_job_title", label: "Job title" },
   { key: "map_email", label: "Email" },
@@ -40,7 +41,22 @@ const MAP_FIELDS: { key: string; label: string; required?: boolean }[] = [
   { key: "map_city", label: "City" },
   { key: "map_region", label: "Region" },
   { key: "map_postcode", label: "Postcode" },
-  { key: "map_external_ref", label: "External reference" },
+  { key: "map_external_ref", label: "Sr. No / external reference" },
+];
+
+// No dedicated leads column — stored under leads.custom and shown on the
+// lead's Details view. Matches the planning/construction-lead sheet
+// format (Council, Project Type, Decision, Portal URL, ...).
+const PROJECT_FIELDS: { key: string; label: string }[] = [
+  { key: "map_council", label: "Council" },
+  { key: "map_project_name", label: "Name (project / site)" },
+  { key: "map_project_type", label: "Project type" },
+  { key: "map_units", label: "Units" },
+  { key: "map_summary", label: "Summary" },
+  { key: "map_decision", label: "Decision" },
+  { key: "map_decision_date", label: "Decision date" },
+  { key: "map_portal_url", label: "Portal URL" },
+  { key: "map_source_notes", label: "Notes" },
 ];
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -234,13 +250,50 @@ export function VendorCsvDialog({
                   </span>
                 )}
               </p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {MAP_FIELDS.map((f) => (
+
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+                Contact fields
+              </p>
+              <div className="mb-3 grid grid-cols-2 gap-2.5">
+                {CONTACT_FIELDS.map((f) => (
                   <div key={f.key} className="flex flex-col gap-1">
                     <Label className="text-[11px]">
                       {f.label}
                       {f.required && <span className="text-danger"> *</span>}
                     </Label>
+                    <Select
+                      value={mapping[f.key] ?? "__none"}
+                      onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Not mapped" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Not mapped</SelectItem>
+                        {headers.map((h) => (
+                          <SelectItem key={h} value={h}>
+                            {h}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input
+                      type="hidden"
+                      name={f.key}
+                      value={mapping[f.key] && mapping[f.key] !== "__none" ? mapping[f.key] : ""}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+                Project details{" "}
+                <span className="normal-case text-muted">(no lead list column — shown on lead details)</span>
+              </p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {PROJECT_FIELDS.map((f) => (
+                  <div key={f.key} className="flex flex-col gap-1">
+                    <Label className="text-[11px]">{f.label}</Label>
                     <Select
                       value={mapping[f.key] ?? "__none"}
                       onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}

@@ -13,6 +13,7 @@ import { SendEmailButton } from "./send-email-button";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { ManageAgentsDialog } from "./manage-agents-dialog";
 import { ActivateToggle } from "./activate-toggle";
+import { LeadDetailsDialog } from "./lead-details-dialog";
 
 const SCREENING_BADGE: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
   passed: "confirm",
@@ -162,6 +163,10 @@ export default async function CampaignDetailPage({
                     </td>
                     <td className="px-3 py-1.5">
                       <div className="flex items-center justify-end gap-1">
+                        <LeadDetailsDialog
+                          leadName={[l.first_name, l.last_name].filter(Boolean).join(" ") || l.phone_e164}
+                          custom={l.custom as Record<string, unknown> | null}
+                        />
                         <SendEmailButton leadId={l.id} hasEmail={Boolean(l.email)} templates={templateOptions} />
                         <LeadRowActions
                           leadId={l.id}
