@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Placeholder brand mark — three interlocking gears in the exact brand
@@ -15,7 +16,7 @@ export function BrandMark({ className, size = 28 }: { className?: string; size?:
       height={size}
       className={cn("shrink-0", className)}
       role="img"
-      aria-label="ABPO Command"
+      aria-label={BRAND.productName}
     >
       <circle cx="18" cy="18" r="9" fill="var(--brand-blue)" />
       <circle cx="32" cy="16" r="6.5" fill="var(--brand-orange)" />
@@ -29,8 +30,7 @@ export function BrandLockup({ className }: { className?: string }) {
     <div className={cn("flex items-center gap-2", className)}>
       <BrandMark />
       <div className="leading-none">
-        <div className="text-sm font-semibold text-ink tracking-tight">ABPO Command</div>
-        <div className="text-[10px] text-muted tracking-wide uppercase">Assorted BPO</div>
+        <div className="text-sm font-semibold text-ink tracking-tight">{BRAND.productName}</div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getEmailProvider } from "@/lib/email/provider";
 import { renderTemplate } from "@/lib/email/merge";
 import { signUnsubscribeToken } from "@/lib/email/unsubscribe-token";
+import { BRAND } from "@/lib/brand";
 
 export interface ActionResult {
   error?: string;
@@ -25,7 +26,7 @@ export async function createEmailTemplate(
   const name = String(formData.get("name") ?? "").trim();
   const subject = String(formData.get("subject") ?? "").trim();
   const bodyHtml = String(formData.get("body_html") ?? "").trim();
-  const fromName = String(formData.get("from_name") ?? "Assorted BPO");
+  const fromName = String(formData.get("from_name") ?? BRAND.emailFromName);
 
   if (!name || !subject || !bodyHtml) {
     return { error: "Name, subject and body are required." };
@@ -37,7 +38,7 @@ export async function createEmailTemplate(
     subject,
     body_html: bodyHtml,
     from_name: fromName,
-    from_email: `hello@${process.env.EMAIL_FROM_DOMAIN ?? "mail.assorted.group"}`,
+    from_email: `hello@${process.env.EMAIL_FROM_DOMAIN ?? BRAND.emailFromDomainFallback}`,
     // Auto-approved by the manager creating it — a separate approver flow
     // (someone other than the author) is a reasonable Phase-6-era
     // hardening, not blocking Phase 5's core send path.
@@ -109,11 +110,11 @@ export async function sendLeadEmail(
   const subject = renderTemplate(template.subject, mergeData);
   const html =
     renderTemplate(template.body_html, mergeData) +
-    `<hr><p style="font-size:11px;color:#6B7482;">Assorted BPO, on behalf of the client named above. ` +
+    `<hr><p style="font-size:11px;color:#6B7482;">${BRAND.productName}, on behalf of the client named above. ` +
     `<a href="${unsubUrl}">Unsubscribe</a></p>`;
 
-  const fromEmail = template.from_email ?? `hello@${process.env.EMAIL_FROM_DOMAIN ?? "mail.assorted.group"}`;
-  const fromName = template.from_name ?? "Assorted BPO";
+  const fromEmail = template.from_email ?? `hello@${process.env.EMAIL_FROM_DOMAIN ?? BRAND.emailFromDomainFallback}`;
+  const fromName = template.from_name ?? BRAND.emailFromName;
 
   const { data: sendRow, error: insertError } = await supabase
     .from("email_sends")

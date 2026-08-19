@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,8 +18,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ABPO Command",
-  description: "Assorted BPO — call centre CRM and workforce platform",
+  title: BRAND.productName,
+  description: BRAND.metaDescription,
 };
 
 export default function RootLayout({
