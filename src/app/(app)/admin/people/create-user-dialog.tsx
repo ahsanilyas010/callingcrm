@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, Loader2, UserPlus, ShieldAlert } from "lucide-react";
 import { createUser, type CreateUserResult } from "@/lib/actions/users";
+import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,7 +107,7 @@ export function CreateUserDialog({
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="agent_code">Agent code</Label>
-                    <Input id="agent_code" name="agent_code" placeholder="ABPO-014" mono />
+                    <Input id="agent_code" name="agent_code" placeholder={BRAND.agentCodePlaceholder} mono />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">

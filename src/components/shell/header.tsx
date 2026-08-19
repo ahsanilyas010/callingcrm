@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LogOut, User, CalendarPlus, Menu } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
+import { BRAND } from "@/lib/brand";
 import { RequestLeaveDialog } from "@/components/shell/request-leave-dialog";
 import {
   DropdownMenu,
@@ -58,7 +59,7 @@ function useTitle() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
   const last = segments[segments.length - 1] ?? "admin";
-  return TITLES[last] ?? "ABPO Command";
+  return TITLES[last] ?? BRAND.productName;
 }
 
 export function Header({

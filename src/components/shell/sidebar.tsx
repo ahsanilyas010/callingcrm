@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 import { BrandMark } from "@/components/brand/mark";
 import type { NavItem, NavIconName } from "@/lib/nav";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -53,7 +54,7 @@ export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: 
         <div className="flex h-12 items-center gap-2 border-b border-line px-3">
           <BrandMark size={22} />
           {!collapsed && (
-            <span className="truncate text-sm font-semibold text-ink">ABPO Command</span>
+            <span className="truncate text-sm font-semibold text-ink">{BRAND.productName}</span>
           )}
         </div>
 

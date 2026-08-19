@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateCampaignDialog } from "./create-campaign-dialog";
 import { CreateClientDialog } from "./create-client-dialog";
 import { EditClientDialog } from "./edit-client-dialog";
+import { BRAND } from "@/lib/brand";
 
 export default async function CampaignsPage() {
   const profile = await requireProfile();
@@ -125,7 +126,7 @@ export default async function CampaignsPage() {
                       {c.is_data_controller ? (
                         <Badge variant="blue">Client</Badge>
                       ) : (
-                        <Badge variant="neutral">ABPO</Badge>
+                        <Badge variant="neutral">{BRAND.processorBadgeLabel}</Badge>
                       )}
                     </td>
                     <td className="px-3 py-1.5 text-muted">

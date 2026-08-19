@@ -1,5 +1,6 @@
 import "server-only";
 import { Document, Page, Text, View, StyleSheet, Svg, Circle } from "@react-pdf/renderer";
+import { BRAND } from "@/lib/brand";
 import type { ClientFunnelResult } from "./client-funnel";
 
 // Brand hexes from src/app/globals.css — react-pdf can't read CSS custom
@@ -98,12 +99,12 @@ export function ClientReportDocument({ clientName, rows, dispositions }: ClientF
   const generatedOn = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <Document title={`Assorted BPO — client report — ${clientName}`}>
+    <Document title={`${BRAND.productName} — client report — ${clientName}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Mark />
           <View style={styles.headerText}>
-            <Text style={styles.title}>Assorted BPO — client report</Text>
+            <Text style={styles.title}>{BRAND.productName} — client report</Text>
             <Text style={styles.subtitle}>Aggregate campaign performance. No individual lead data included.</Text>
           </View>
         </View>
@@ -182,7 +183,7 @@ export function ClientReportDocument({ clientName, rows, dispositions }: ClientF
         <View style={styles.footer} fixed>
           <View style={styles.footerRule} />
           <Text>
-            Assorted BPO, on behalf of {clientName}. This report contains aggregate counts only —
+            {BRAND.productName}, on behalf of {clientName}. This report contains aggregate counts only —
             no lead names, phone numbers, emails, or agent identities are ever included, by design.
           </Text>
         </View>

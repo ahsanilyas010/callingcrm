@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Plus } from "lucide-react";
 import { createEmailTemplate, type ActionResult } from "@/lib/actions/email";
+import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +81,7 @@ export function CreateTemplateDialog({ campaignId }: { campaignId: string }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="from_name">From name</Label>
-            <Input id="from_name" name="from_name" defaultValue="Assorted BPO" />
+            <Input id="from_name" name="from_name" defaultValue={BRAND.emailFromName} />
           </div>
 
           <AnimatePresence>

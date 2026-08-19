@@ -1,5 +1,6 @@
 import { LoginForm } from "./login-form";
 import { BrandMark } from "@/components/brand/mark";
+import { BRAND } from "@/lib/brand";
 
 export default async function LoginPage({
   searchParams,
@@ -14,8 +15,8 @@ export default async function LoginPage({
         <div className="mb-8 flex flex-col items-center gap-3">
           <BrandMark size={40} />
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-ink">ABPO Command</h1>
-            <p className="text-xs text-muted">Assorted BPO — call centre floor</p>
+            <h1 className="text-lg font-semibold text-ink">{BRAND.productName}</h1>
+            <p className="text-xs text-muted">{BRAND.loginTagline}</p>
           </div>
         </div>
         <LoginForm next={next} />

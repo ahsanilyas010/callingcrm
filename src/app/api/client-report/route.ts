@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { loadClientFunnel } from "@/lib/reports/client-funnel";
 import { ClientReportDocument } from "@/lib/reports/client-report-pdf";
+import { BRAND } from "@/lib/brand";
 
 export async function GET(request: NextRequest) {
   const clientIdParam = request.nextUrl.searchParams.get("client");
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   const buffer = await renderToBuffer(ClientReportDocument(outcome.result));
-  const filename = `assorted-bpo-client-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+  const filename = `${BRAND.pdfFilenamePrefix}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

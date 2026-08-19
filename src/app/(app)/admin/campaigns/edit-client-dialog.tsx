@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Pencil } from "lucide-react";
 import { updateClientRecord, type CreateClientResult } from "@/lib/actions/campaigns";
+import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,7 +91,7 @@ export function EditClientDialog({ client }: { client: ClientRow }) {
           </div>
           <label className="flex items-center gap-2 text-xs text-muted">
             <Switch name="is_data_controller" defaultChecked={client.is_data_controller} />
-            Client is the data controller (ABPO is the processor)
+            Client is the data controller ({BRAND.processorLabel} is the processor)
           </label>
 
           <AnimatePresence>
