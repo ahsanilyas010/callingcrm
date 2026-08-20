@@ -51,8 +51,41 @@ export default async function PerformancePage() {
     .map((a) => ({ ...a, name: nameById.get(a.agentId) ?? "—" }))
     .sort((a, b) => b.calls - a.calls);
 
+  const totals = leaderboard.reduce(
+    (acc, a) => ({ calls: acc.calls + a.calls, connects: acc.connects + a.connects, conversions: acc.conversions + a.conversions }),
+    { calls: 0, connects: 0, conversions: 0 },
+  );
+  const contactRate = totals.calls > 0 ? `${Math.round((totals.connects / totals.calls) * 100)}%` : "—";
+
   return (
     <div className="p-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{totals.calls}</div>
+            <div className="text-xs text-muted">Calls attempted — 7d</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{totals.connects}</div>
+            <div className="text-xs text-muted">Connects — 7d</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-brand-green-text">{totals.conversions}</div>
+            <div className="text-xs text-muted">Conversions — 7d</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{contactRate}</div>
+            <div className="text-xs text-muted">Contact rate — 7d</div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="mb-4 animate-slide-up">
         <CardHeader>
           <CardTitle>Campaign funnel</CardTitle>
