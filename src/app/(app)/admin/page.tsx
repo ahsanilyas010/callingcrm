@@ -5,6 +5,25 @@ import { Activity, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Aux states (00000000000014_attendance_schema.sql) grouped into the four
+// tiles below — a per-state tile each would be too many for a glance-able
+// floor view, so this is the same "bucket, don't enumerate" call the aux
+// widget itself doesn't make (it shows the raw state) but a summary tile
+// grid should.
+const AUX_BUCKET: Record<string, "available" | "on_call" | "break" | "away"> = {
+  available: "available",
+  on_call: "on_call",
+  after_call_work: "on_call",
+  break: "break",
+  lunch: "break",
+  prayer: "break",
+  meeting: "break",
+  training: "break",
+  idle: "away",
+  offline: "away",
+  system_issue: "away",
+};
+
 export default async function LiveFloorPage() {
   // Matches ADMIN_NAV's roles for /admin in lib/nav.ts — the nav already
   // hides this from other roles, but the route was still reachable by
@@ -14,11 +33,23 @@ export default async function LiveFloorPage() {
   if (!["super_admin", "ops_manager", "team_lead"].includes(profile.role)) redirect("/");
 
   const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
 
-  const { data: campaigns } = await supabase
-    .from("campaigns")
-    .select("id, name, code, market, is_active, campaign_assignments(user_id)")
-    .order("created_at", { ascending: false });
+  const [{ data: campaigns }, { data: activeSessions }, { data: scorecardRows }] = await Promise.all([
+    supabase
+      .from("campaigns")
+      .select("id, name, code, market, is_active, campaign_assignments(user_id)")
+      .order("created_at", { ascending: false }),
+    // attendance_select/aux_logs_select RLS (migration 15) already scopes
+    // this to every user for is_manager(), or just the team for team_lead
+    // — same visibility the page's own role gate above assumes.
+    supabase
+      .from("attendance_sessions")
+      .select("id")
+      .eq("work_date", today)
+      .is("clock_out_at", null),
+    supabase.rpc("get_agent_scorecard", { p_from: today, p_to: today }),
+  ]);
 
   const totalAgents = new Set(
     (campaigns ?? []).flatMap((c) =>
@@ -27,6 +58,29 @@ export default async function LiveFloorPage() {
       ),
     ),
   ).size;
+
+  const sessionIds = (activeSessions ?? []).map((s) => s.id);
+  const { data: openAux } =
+    sessionIds.length > 0
+      ? await supabase.from("aux_logs").select("state").in("session_id", sessionIds).is("ended_at", null)
+      : { data: [] as { state: string }[] };
+
+  const auxCounts = { available: 0, on_call: 0, break: 0, away: 0 };
+  for (const row of openAux ?? []) {
+    const bucket = AUX_BUCKET[row.state];
+    if (bucket) auxCounts[bucket] += 1;
+  }
+
+  const callsToday = (scorecardRows ?? []).reduce(
+    (acc, r) => ({
+      calls: acc.calls + (r.calls_attempted ?? 0),
+      connects: acc.connects + (r.connects ?? 0),
+      conversions: acc.conversions + (r.conversions ?? 0),
+    }),
+    { calls: 0, connects: 0, conversions: 0 },
+  );
+  const contactRateToday =
+    callsToday.calls > 0 ? `${Math.round((callsToday.connects / callsToday.calls) * 100)}%` : "—";
 
   return (
     <div className="p-4">
@@ -37,14 +91,63 @@ export default async function LiveFloorPage() {
           </CardTitle>
           <span className="text-xs text-muted">{totalAgents} agents assigned across campaigns</span>
         </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted">
-            Real-time headcount, aux states, and per-campaign call volume arrive with the agent
-            workspace (Phase 3) and attendance (Phase 4). What&rsquo;s real today: campaigns and
-            who&rsquo;s assigned to them.
-          </p>
-        </CardContent>
       </Card>
+
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Right now</p>
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-brand-green-text">{auxCounts.available}</div>
+            <div className="text-xs text-muted">Available</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{auxCounts.on_call}</div>
+            <div className="text-xs text-muted">On call / wrap-up</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-warning">{auxCounts.break}</div>
+            <div className="text-xs text-muted">On break</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-muted">{auxCounts.away}</div>
+            <div className="text-xs text-muted">Idle / offline</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Today so far</p>
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{callsToday.calls}</div>
+            <div className="text-xs text-muted">Calls attempted</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{callsToday.connects}</div>
+            <div className="text-xs text-muted">Connects</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-brand-green-text">{callsToday.conversions}</div>
+            <div className="text-xs text-muted">Conversions</div>
+          </CardContent>
+        </Card>
+        <Card className="animate-slide-up">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-semibold tabular text-ink">{contactRateToday}</div>
+            <div className="text-xs text-muted">Contact rate</div>
+          </CardContent>
+        </Card>
+      </div>
 
       {(campaigns ?? []).length === 0 ? (
         <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-line bg-white">
