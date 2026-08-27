@@ -44,6 +44,7 @@ export const ADMIN_NAV: NavItem[] = [
 
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/workspace", label: "Dial workspace", icon: "Headset", roles: ["agent"] },
+  { href: "/workspace/leads", label: "My leads", icon: "Users", roles: ["agent"] },
   { href: "/client", label: "Reports", icon: "Building2", roles: ["client_viewer"] },
   { href: "/qa", label: "QA queue", icon: "ShieldCheck", roles: ["qa"] },
   ...ADMIN_NAV,

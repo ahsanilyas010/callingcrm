@@ -25,4 +25,7 @@ export const CUSTOM_FIELD_LABELS: Record<string, string> = {
   follow_up_date_source: "Follow-up date (source)",
   source_sheet: "Source sheet",
   source_row: "Source row #",
+  // Written by the agent-facing edit form (src/app/(app)/workspace/leads) —
+  // the one custom key that's live/editable rather than imported history.
+  agent_notes: "My notes",
 };
