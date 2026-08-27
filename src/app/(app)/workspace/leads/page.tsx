@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
+import { priorContact } from "@/lib/leads/prior-contact";
 import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
 import { EditLeadDialog } from "./edit-lead-dialog";
 
@@ -19,7 +20,7 @@ export default async function MyLeadsPage() {
   // — the explicit filter here is just for query efficiency, not security.
   const { data: leads } = await supabase
     .from("leads")
-    .select("*, campaigns(name, code)")
+    .select("*")
     .eq("assigned_to", user.id)
     .order("updated_at", { ascending: false })
     .limit(500);
@@ -42,8 +43,9 @@ export default async function MyLeadsPage() {
             <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Phone</th>
-              <th className="px-3 py-2 font-medium">Campaign</th>
               <th className="px-3 py-2 font-medium">Project</th>
+              <th className="px-3 py-2 font-medium">Disposition</th>
+              <th className="px-3 py-2 font-medium">Remarks</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium" />
             </tr>
@@ -51,16 +53,21 @@ export default async function MyLeadsPage() {
           <tbody>
             {rows.map((l) => {
               const custom = (l.custom as Record<string, unknown> | null) ?? {};
-              const campaign = (l as { campaigns?: { name: string; code: string } | null }).campaigns;
+              const { disposition, remarks } = priorContact(l.custom);
               return (
                 <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
                   <td className="px-3 py-1.5 font-medium text-ink">
                     {[l.first_name, l.last_name].filter(Boolean).join(" ") || l.company_name || "—"}
                   </td>
                   <td className="px-3 py-1.5 tabular">{l.phone_e164}</td>
-                  <td className="px-3 py-1.5 text-muted">{campaign?.name ?? "—"}</td>
-                  <td className="max-w-[220px] truncate px-3 py-1.5 text-muted">
+                  <td className="max-w-[180px] truncate px-3 py-1.5 text-muted">
                     {typeof custom.project_type === "string" ? custom.project_type : "—"}
+                  </td>
+                  <td className="px-3 py-1.5">
+                    {disposition ? <Badge variant="warning">{disposition}</Badge> : "—"}
+                  </td>
+                  <td className="max-w-[280px] truncate px-3 py-1.5 text-muted" title={remarks ?? undefined}>
+                    {remarks ?? "—"}
                   </td>
                   <td className="px-3 py-1.5">
                     {l.do_not_call ? (
@@ -83,7 +90,7 @@ export default async function MyLeadsPage() {
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted">
+                <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted">
                   No leads assigned to you yet.
                 </td>
               </tr>

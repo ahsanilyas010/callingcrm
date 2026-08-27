@@ -13,8 +13,10 @@ import {
   Ban,
   Loader2,
   Inbox,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { priorContact } from "@/lib/leads/prior-contact";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -286,6 +288,20 @@ export function Workspace({
                     </Button>
                   </div>
                 </div>
+
+                {(() => {
+                  const { disposition, remarks } = priorContact(lead.custom);
+                  if (!disposition && !remarks) return null;
+                  return (
+                    <div className="flex flex-col gap-1 rounded-md border border-warning bg-warning-tint px-3 py-2 text-sm text-warning">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <History className="h-4 w-4" /> Worked before
+                        {disposition && <Badge variant="warning">{disposition}</Badge>}
+                      </div>
+                      {remarks && <p className="text-xs leading-snug">{remarks}</p>}
+                    </div>
+                  );
+                })()}
 
                 <div className="flex items-center gap-2 rounded-md bg-brand-green-tint px-3 py-2 text-sm text-brand-green-text">
                   <Clock className="h-4 w-4" />
