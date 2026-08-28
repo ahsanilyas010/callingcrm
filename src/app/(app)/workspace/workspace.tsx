@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { priorContact } from "@/lib/leads/prior-contact";
+import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -262,6 +263,14 @@ export function Workspace({
                     <Badge variant="neutral">
                       Attempt {lead.attempt_count + 1} of {campaign.max_attempts}
                     </Badge>
+                    <LeadDetailsDialog
+                      leadName={
+                        [lead.first_name, lead.last_name].filter(Boolean).join(" ") ||
+                        lead.company_name ||
+                        lead.phone_e164
+                      }
+                      custom={lead.custom as Record<string, unknown> | null}
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <a

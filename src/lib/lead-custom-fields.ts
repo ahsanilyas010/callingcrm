@@ -28,4 +28,9 @@ export const CUSTOM_FIELD_LABELS: Record<string, string> = {
   // Written by the agent-facing edit form (src/app/(app)/workspace/leads) —
   // the one custom key that's live/editable rather than imported history.
   agent_notes: "My notes",
+  // unphoned_contacts.custom — the building-intelligence contacts export
+  // (no phone number in source), surfaced via the same details dialog.
+  contact_role: "Role on project",
+  project_value: "Project value",
+  company_ref: "Company ref",
 };

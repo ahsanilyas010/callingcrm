@@ -87,7 +87,11 @@ export default async function MyLeadsPage() {
                       {c.email ?? "—"}
                     </td>
                     <td className="px-3 py-1.5">
-                      <div className="flex justify-end">
+                      <div className="flex items-center justify-end gap-1">
+                        <LeadDetailsDialog
+                          leadName={[c.first_name, c.last_name].filter(Boolean).join(" ") || "This contact"}
+                          custom={c.custom as Record<string, unknown> | null}
+                        />
                         <PromoteContactDialog contact={c} />
                       </div>
                     </td>
