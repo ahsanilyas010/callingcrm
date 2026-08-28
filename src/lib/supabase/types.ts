@@ -2082,6 +2082,16 @@ export type Database = {
           unique_leads_touched: number
         }[]
       }
+      get_client_agent_activity: {
+        Args: { p_client_id?: string; p_from?: string; p_to?: string }
+        Returns: Database["public"]["CompositeTypes"]["client_agent_activity_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_agent_activity_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_client_dispositions: {
         Args: { p_client_id?: string }
         Returns: {
@@ -2242,6 +2252,16 @@ export type Database = {
         day: string | null
         talk_seconds: number | null
         unique_leads_touched: number | null
+      }
+      client_agent_activity_row: {
+        day: string | null
+        agents_active: number | null
+        calls_attempted: number | null
+        connects: number | null
+        talk_minutes: number | null
+        wrap_minutes: number | null
+        attendance_minutes: number | null
+        productive_minutes: number | null
       }
       client_disposition_row: {
         attempts: number | null
