@@ -1771,6 +1771,124 @@ export type Database = {
           },
         ]
       }
+      unphoned_contacts: {
+        Row: {
+          assigned_to: string | null
+          campaign_id: string
+          company_ref: string | null
+          contact_added_on: string | null
+          country_hint: string
+          created_at: string
+          custom: Json
+          data_source_id: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          person_ref: string
+          phone_raw: string | null
+          project_ref: string
+          project_title: string | null
+          project_town: string | null
+          project_value: number | null
+          promoted_at: string | null
+          promoted_lead_id: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          campaign_id: string
+          company_ref?: string | null
+          contact_added_on?: string | null
+          country_hint?: string
+          created_at?: string
+          custom?: Json
+          data_source_id: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          person_ref: string
+          phone_raw?: string | null
+          project_ref: string
+          project_title?: string | null
+          project_town?: string | null
+          project_value?: number | null
+          promoted_at?: string | null
+          promoted_lead_id?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          campaign_id?: string
+          company_ref?: string | null
+          contact_added_on?: string | null
+          country_hint?: string
+          created_at?: string
+          custom?: Json
+          data_source_id?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          person_ref?: string
+          phone_raw?: string | null
+          project_ref?: string
+          project_title?: string | null
+          project_town?: string | null
+          project_value?: number | null
+          promoted_at?: string | null
+          promoted_lead_id?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unphoned_contacts_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unphoned_contacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unphoned_contacts_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unphoned_contacts_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
+          },
+          {
+            foreignKeyName: "unphoned_contacts_promoted_lead_id_fkey"
+            columns: ["promoted_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unphoned_contacts_promoted_lead_id_fkey"
+            columns: ["promoted_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_sessions: {
         Row: {
           ended_at: string | null
@@ -1993,6 +2111,14 @@ export type Database = {
       is_manager: { Args: never; Returns: boolean }
       my_team_id: { Args: never; Returns: string }
       my_team_members: { Args: never; Returns: string[] }
+      promote_unphoned_contact: {
+        Args: {
+          p_contact_id: string
+          p_phone_e164: string
+          p_phone_raw: string
+        }
+        Returns: string
+      }
       record_call_attempt: {
         Args: {
           p_disposition_code: string
