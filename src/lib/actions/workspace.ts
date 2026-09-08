@@ -7,9 +7,13 @@ export interface WorkspaceLead {
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;
+  job_title: string | null;
   phone_e164: string;
+  email: string | null;
+  address_line1: string | null;
   city: string | null;
   region: string | null;
+  postcode: string | null;
   screened_at: string | null;
   attempt_count: number;
   next_action_at: string | null;
@@ -84,7 +88,7 @@ export async function getNextLead(campaignId: string): Promise<WorkspaceLead | n
   const { data } = await supabase
     .from("v_dialable_leads")
     .select(
-      "id, first_name, last_name, company_name, phone_e164, city, region, screened_at, attempt_count, next_action_at, lead_local_time, custom",
+      "id, first_name, last_name, company_name, job_title, phone_e164, email, address_line1, city, region, postcode, screened_at, attempt_count, next_action_at, lead_local_time, custom",
     )
     .eq("campaign_id", campaignId)
     .order("next_action_at", { ascending: true, nullsFirst: false })

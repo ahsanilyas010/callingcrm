@@ -7,6 +7,7 @@ import {
   Copy,
   Check,
   Phone,
+  Mail,
   Clock,
   BookOpen,
   ChevronDown,
@@ -91,6 +92,7 @@ export function Workspace({
   const [bookCallback, setBookCallback] = useState(false);
   const [callbackAt, setCallbackAt] = useState("");
   const [copied, setCopied] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(true);
   const [touched, setTouched] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -296,6 +298,32 @@ export function Workspace({
                       )}
                     </Button>
                   </div>
+                  {lead.email && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <a
+                        href={`mailto:${lead.email}`}
+                        className="flex items-center gap-1.5 text-sm text-muted hover:text-brand-blue"
+                      >
+                        <Mail className="h-3.5 w-3.5" /> {lead.email}
+                      </a>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(lead.email!);
+                          setEmailCopied(true);
+                          toast.success("Copied");
+                          setTimeout(() => setEmailCopied(false), 1200);
+                        }}
+                      >
+                        {emailCopied ? (
+                          <Check className="h-3.5 w-3.5 text-brand-green-text" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {(() => {
@@ -322,9 +350,19 @@ export function Workspace({
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-md border border-line bg-white p-3 text-sm">
-                  <div className="text-muted">Location</div>
+                  {lead.company_name && (
+                    <>
+                      <div className="text-muted">Company</div>
+                      <div className="text-ink">
+                        {lead.company_name}
+                        {lead.job_title ? ` — ${lead.job_title}` : ""}
+                      </div>
+                    </>
+                  )}
+                  <div className="text-muted">Address</div>
                   <div className="text-ink">
-                    {[lead.city, lead.region].filter(Boolean).join(", ") || "—"}
+                    {[lead.address_line1, lead.city, lead.region, lead.postcode].filter(Boolean).join(", ") ||
+                      "—"}
                   </div>
                   <div className="text-muted">Screened</div>
                   <div className="flex items-center gap-1 text-brand-green-text">
