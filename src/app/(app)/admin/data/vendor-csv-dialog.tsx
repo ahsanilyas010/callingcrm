@@ -49,14 +49,24 @@ const CONTACT_FIELDS: { key: string; label: string; required?: boolean }[] = [
 // format (Council, Project Type, Decision, Portal URL, ...).
 const PROJECT_FIELDS: { key: string; label: string }[] = [
   { key: "map_council", label: "Council" },
+  { key: "map_authority", label: "Authority" },
   { key: "map_project_name", label: "Name (project / site)" },
   { key: "map_project_type", label: "Project type" },
+  { key: "map_application_type", label: "Application type" },
+  { key: "map_category", label: "Category" },
+  { key: "map_application_date", label: "Application date" },
   { key: "map_units", label: "Units" },
   { key: "map_summary", label: "Summary" },
+  { key: "map_proposal", label: "Proposal" },
+  { key: "map_architect_name", label: "Architect Name" },
   { key: "map_decision", label: "Decision" },
   { key: "map_decision_date", label: "Decision date" },
+  { key: "map_disposition", label: "Disposition" },
+  { key: "map_contact", label: "Contact" },
   { key: "map_portal_url", label: "Portal URL" },
+  { key: "map_web", label: "Web" },
   { key: "map_source_notes", label: "Notes" },
+  { key: "map_comments", label: "Comments" },
 ];
 
 function SubmitButton({ disabled }: { disabled: boolean }) {

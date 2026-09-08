@@ -63,15 +63,31 @@ const FIELD_KEYWORDS: Record<string, FieldMatchRules> = {
   map_city: { exact: ["city", "town"], loose: ["city", "town"] },
   map_region: { exact: ["region", "state", "county", "province"], loose: ["region", "county", "province"] },
   map_postcode: { exact: ["postcode", "postal code", "zip code", "zip"], loose: ["postcode", "postal code", "zip"] },
-  map_council: { exact: ["council", "local authority", "borough"], loose: ["council", "local authority"] },
+  map_council: { exact: ["council", "borough"], loose: ["council"] },
+  map_authority: { exact: ["authority", "local authority", "local planning authority", "lpa"], loose: ["authority"] },
+  // Application Date / Application Type before the generic Decision Date /
+  // project-type fields, same reasoning as contact_name_address.
+  map_application_date: { exact: ["application date", "date received", "app date"], loose: ["application date"] },
+  map_application_type: { exact: ["application type"], loose: ["application type"] },
+  map_category: { exact: ["category"], loose: ["category"] },
   // Decision Date before Decision, same reasoning as contact_name_address.
   map_decision_date: { exact: ["decision date", "date of decision"], loose: ["decision date"] },
   map_decision: { exact: ["decision", "outcome", "status"], loose: ["decision"] },
-  map_project_type: { exact: ["project type", "application type", "development type"], loose: ["project type", "application type"] },
+  map_disposition: { exact: ["disposition", "prior disposition"], loose: ["disposition"] },
+  map_project_type: { exact: ["project type", "development type"], loose: ["project type"] },
   map_units: { exact: ["units", "no of units", "number of units", "unit count"], loose: ["units"] },
-  map_summary: { exact: ["summary", "description", "proposal"], loose: ["summary", "description"] },
+  // Proposal before Summary — a header that literally says "Proposal"
+  // should claim the dedicated field, not fall through to the more
+  // generic summary/description one.
+  map_proposal: { exact: ["proposal"], loose: ["proposal"] },
+  map_summary: { exact: ["summary", "description"], loose: ["summary", "description"] },
+  map_architect_name: { exact: ["architect name", "architect"], loose: ["architect"] },
+  map_contact: { exact: ["contact", "contact person"] },
   map_portal_url: { exact: ["portal url", "portal link", "url", "link", "source url"], loose: ["portal url", "portal link"] },
-  map_source_notes: { exact: ["notes", "note", "remarks", "comments"], loose: ["notes", "remarks", "comments"] },
+  map_web: { exact: ["web", "website"], loose: ["web", "website"] },
+  // Comments before the generic Notes field, same reasoning as Proposal.
+  map_comments: { exact: ["comments"], loose: ["comments"] },
+  map_source_notes: { exact: ["notes", "note", "remarks"], loose: ["notes", "remarks"] },
   // "name" alone is exact-only: it must not loose-match "Full Name" or
   // "Company Name" and steal them from the fields above, which is exactly
   // what happened before this field had a restricted keyword set. Only a
