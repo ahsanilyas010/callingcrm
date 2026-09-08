@@ -166,6 +166,15 @@ export default async function CampaignDetailPage({
                         <LeadDetailsDialog
                           leadName={[l.first_name, l.last_name].filter(Boolean).join(" ") || l.phone_e164}
                           custom={l.custom as Record<string, unknown> | null}
+                          contact={{
+                            email: l.email,
+                            company_name: l.company_name,
+                            job_title: l.job_title,
+                            address_line1: l.address_line1,
+                            city: l.city,
+                            region: l.region,
+                            postcode: l.postcode,
+                          }}
                         />
                         <SendEmailButton leadId={l.id} hasEmail={Boolean(l.email)} templates={templateOptions} />
                         <LeadRowActions

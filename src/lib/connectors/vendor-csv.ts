@@ -36,7 +36,22 @@ export type VendorCsvFieldMap = Partial<
     | "decisionDate"
     | "contactNameAddress"
     | "portalUrl"
-    | "sourceNotes",
+    | "sourceNotes"
+    // Planning-application tracker fields — same "no dedicated leads
+    // column" reasoning as the block above. "disposition" reuses the
+    // prior_disposition custom key so an imported prior outcome shows up
+    // through the same "Worked before" banner / My Leads badge as the
+    // spreadsheet-import path already does.
+    | "applicationDate"
+    | "authority"
+    | "category"
+    | "applicationType"
+    | "proposal"
+    | "architectName"
+    | "web"
+    | "contact"
+    | "comments"
+    | "disposition",
     string
   >
 >;
@@ -80,6 +95,16 @@ export function normaliseVendorRow(
   setCustom("contact_name_address", get(fieldMap.contactNameAddress));
   setCustom("portal_url", get(fieldMap.portalUrl));
   setCustom("source_notes", get(fieldMap.sourceNotes));
+  setCustom("application_date", get(fieldMap.applicationDate));
+  setCustom("authority", get(fieldMap.authority));
+  setCustom("category", get(fieldMap.category));
+  setCustom("application_type", get(fieldMap.applicationType));
+  setCustom("proposal", get(fieldMap.proposal));
+  setCustom("architect_name", get(fieldMap.architectName));
+  setCustom("web", get(fieldMap.web));
+  setCustom("contact", get(fieldMap.contact));
+  setCustom("comments", get(fieldMap.comments));
+  setCustom("prior_disposition", get(fieldMap.disposition));
 
   return {
     externalRef: get(fieldMap.externalRef),
