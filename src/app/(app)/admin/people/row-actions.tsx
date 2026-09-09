@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, KeyRound, UserX, UserCheck, Copy, Check } from "lucide-react";
+import { MoreHorizontal, KeyRound, UserX, UserCheck, Copy, Check, Megaphone } from "lucide-react";
 import { resetPassword, type ResetPasswordResult } from "@/lib/actions/users";
 import { deactivateUser, reactivateUser } from "@/lib/actions/deactivate";
+import { AssignToCampaignDialog } from "./assign-campaign-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +25,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const initialState: ResetPasswordResult = {};
 
-export function PeopleRowActions({ userId, isActive }: { userId: string; isActive: boolean }) {
+export function PeopleRowActions({
+  userId,
+  userName,
+  isActive,
+  campaigns,
+}: {
+  userId: string;
+  userName: string;
+  isActive: boolean;
+  campaigns: { id: string; name: string; code: string }[];
+}) {
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [state, formAction] = useActionState(resetPassword, initialState);
   const [confirmed, setConfirmed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -42,6 +54,9 @@ export function PeopleRowActions({ userId, isActive }: { userId: string; isActiv
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setResetOpen(true)}>
             <KeyRound className="mr-2 h-3.5 w-3.5" /> Reset password
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setAssignOpen(true)}>
+            <Megaphone className="mr-2 h-3.5 w-3.5" /> Assign to campaign
           </DropdownMenuItem>
           {isActive ? (
             <DropdownMenuItem
@@ -65,6 +80,14 @@ export function PeopleRowActions({ userId, isActive }: { userId: string; isActiv
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <AssignToCampaignDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        userId={userId}
+        userName={userName}
+        campaigns={campaigns}
+      />
 
       <Dialog
         open={resetOpen}

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeaveDecisionButtons } from "./leave-decision-buttons";
 import { CreateShiftDialog } from "./create-shift-dialog";
 import { AssignShiftDialog } from "./assign-shift-dialog";
+import { CampaignRosterPanel } from "./campaign-roster-panel";
 
 const STATUS_BADGE: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
   present: "confirm",
@@ -26,7 +27,7 @@ export default async function AttendancePage() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: sessions }, { data: leaveRequests }, { data: shifts }, { data: people }] =
+  const [{ data: sessions }, { data: leaveRequests }, { data: shifts }, { data: people }, { data: campaigns }] =
     await Promise.all([
       supabase
         .from("attendance_sessions")
@@ -40,6 +41,7 @@ export default async function AttendancePage() {
         .limit(50),
       supabase.from("shifts").select("*").order("name"),
       supabase.from("profiles").select("id, full_name, role").eq("is_active", true).order("full_name"),
+      supabase.from("campaigns").select("id, name, code").order("name"),
     ]);
 
   const pendingLeave = (leaveRequests ?? []).filter((l) => l.status === "pending");
@@ -169,6 +171,9 @@ export default async function AttendancePage() {
 
         {canManageShifts && (
           <TabsContent value="shifts">
+            <div className="mb-4">
+              <CampaignRosterPanel people={people ?? []} campaigns={campaigns ?? []} />
+            </div>
             <div className="mb-3 flex justify-end">
               <CreateShiftDialog />
             </div>
