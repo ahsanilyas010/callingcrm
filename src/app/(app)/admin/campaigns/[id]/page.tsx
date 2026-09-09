@@ -23,6 +23,11 @@ const SCREENING_BADGE: Record<string, React.ComponentProps<typeof Badge>["varian
   pending: "warning",
 };
 
+function customStr(custom: unknown, key: string): string | null {
+  const v = (custom as Record<string, unknown> | null)?.[key];
+  return typeof v === "string" && v.trim() ? v : null;
+}
+
 export default async function CampaignDetailPage({
   params,
 }: {
@@ -117,13 +122,24 @@ export default async function CampaignDetailPage({
             />
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-line bg-white">
+          <div className="overflow-x-auto rounded-lg border border-line bg-white">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
                   <th className="px-3 py-2 font-medium">Name</th>
                   <th className="px-3 py-2 font-medium">Phone</th>
-                  <th className="px-3 py-2 font-medium">Location</th>
+                  <th className="px-3 py-2 font-medium">Address</th>
+                  <th className="px-3 py-2 font-medium">Authority</th>
+                  <th className="px-3 py-2 font-medium">Category</th>
+                  <th className="px-3 py-2 font-medium">Application type</th>
+                  <th className="px-3 py-2 font-medium">Application date</th>
+                  <th className="px-3 py-2 font-medium">Proposal</th>
+                  <th className="px-3 py-2 font-medium">Architect Name</th>
+                  <th className="px-3 py-2 font-medium">Web</th>
+                  <th className="px-3 py-2 font-medium">Contact</th>
+                  <th className="px-3 py-2 font-medium">Decision date</th>
+                  <th className="px-3 py-2 font-medium">Comments</th>
+                  <th className="px-3 py-2 font-medium">Disposition</th>
                   <th className="px-3 py-2 font-medium">Assigned to</th>
                   <th className="px-3 py-2 font-medium">Status</th>
                   <th className="px-3 py-2 font-medium">Screening</th>
@@ -132,69 +148,111 @@ export default async function CampaignDetailPage({
                 </tr>
               </thead>
               <tbody>
-                {(leads ?? []).map((l) => (
-                  <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
-                    <td className="px-3 py-1.5 font-medium text-ink">
-                      {[l.first_name, l.last_name].filter(Boolean).join(" ") || "—"}
-                    </td>
-                    <td className="px-3 py-1.5 tabular">{l.phone_e164}</td>
-                    <td className="px-3 py-1.5 text-muted">
-                      {[l.city, l.region].filter(Boolean).join(", ") || "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-muted">
-                      {(l as { profiles?: { full_name: string } | null }).profiles?.full_name ?? (
-                        <span className="text-warning">Unassigned</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      {l.do_not_call ? (
-                        <Badge variant="danger">Suppressed</Badge>
-                      ) : (
-                        <Badge variant="neutral">{l.status.replace(/_/g, " ")}</Badge>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <Badge variant={SCREENING_BADGE[l.screening_status] ?? "neutral"}>
-                        {l.screening_status}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-1.5 tabular text-muted">
-                      {l.attempt_count} / {campaign.max_attempts}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <LeadDetailsDialog
-                          leadName={[l.first_name, l.last_name].filter(Boolean).join(" ") || l.phone_e164}
-                          custom={l.custom as Record<string, unknown> | null}
-                          contact={{
-                            email: l.email,
-                            company_name: l.company_name,
-                            job_title: l.job_title,
-                            address_line1: l.address_line1,
-                            city: l.city,
-                            region: l.region,
-                            postcode: l.postcode,
-                          }}
-                        />
-                        <SendEmailButton leadId={l.id} hasEmail={Boolean(l.email)} templates={templateOptions} />
-                        <LeadRowActions
-                          leadId={l.id}
-                          screeningStatus={l.screening_status}
-                          doNotCall={l.do_not_call}
-                          assignedTo={l.assigned_to}
-                          agents={(agents ?? []).map((a) => ({
-                            id: a.user_id,
-                            name:
-                              (a as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
-                          }))}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {(leads ?? []).map((l) => {
+                  const custom = l.custom as Record<string, unknown> | null;
+                  const address = [l.address_line1, l.city, l.region, l.postcode].filter(Boolean).join(", ");
+                  const proposal = customStr(custom, "proposal");
+                  const comments = customStr(custom, "comments");
+                  const web = customStr(custom, "web");
+                  const disposition = customStr(custom, "prior_disposition");
+                  return (
+                    <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
+                      <td className="px-3 py-1.5 font-medium text-ink">
+                        {[l.first_name, l.last_name].filter(Boolean).join(" ") || "—"}
+                      </td>
+                      <td className="px-3 py-1.5 tabular">{l.phone_e164}</td>
+                      <td className="max-w-[200px] truncate px-3 py-1.5 text-muted" title={address || undefined}>
+                        {address || "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-muted">{customStr(custom, "authority") ?? "—"}</td>
+                      <td className="px-3 py-1.5 text-muted">{customStr(custom, "category") ?? "—"}</td>
+                      <td className="px-3 py-1.5 text-muted">{customStr(custom, "application_type") ?? "—"}</td>
+                      <td className="px-3 py-1.5 tabular text-muted">
+                        {customStr(custom, "application_date") ?? "—"}
+                      </td>
+                      <td className="max-w-[200px] truncate px-3 py-1.5 text-muted" title={proposal ?? undefined}>
+                        {proposal ?? "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-muted">{customStr(custom, "architect_name") ?? "—"}</td>
+                      <td className="px-3 py-1.5 text-muted">
+                        {web ? (
+                          <a
+                            href={web.startsWith("http") ? web : `https://${web}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-blue hover:underline"
+                          >
+                            Link
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 text-muted">{customStr(custom, "contact") ?? "—"}</td>
+                      <td className="px-3 py-1.5 tabular text-muted">
+                        {customStr(custom, "decision_date") ?? "—"}
+                      </td>
+                      <td className="max-w-[200px] truncate px-3 py-1.5 text-muted" title={comments ?? undefined}>
+                        {comments ?? "—"}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        {disposition ? <Badge variant="warning">{disposition}</Badge> : "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-muted">
+                        {(l as { profiles?: { full_name: string } | null }).profiles?.full_name ?? (
+                          <span className="text-warning">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        {l.do_not_call ? (
+                          <Badge variant="danger">Suppressed</Badge>
+                        ) : (
+                          <Badge variant="neutral">{l.status.replace(/_/g, " ")}</Badge>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <Badge variant={SCREENING_BADGE[l.screening_status] ?? "neutral"}>
+                          {l.screening_status}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-1.5 tabular text-muted">
+                        {l.attempt_count} / {campaign.max_attempts}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <LeadDetailsDialog
+                            leadName={[l.first_name, l.last_name].filter(Boolean).join(" ") || l.phone_e164}
+                            custom={custom}
+                            contact={{
+                              email: l.email,
+                              company_name: l.company_name,
+                              job_title: l.job_title,
+                              address_line1: l.address_line1,
+                              city: l.city,
+                              region: l.region,
+                              postcode: l.postcode,
+                            }}
+                          />
+                          <SendEmailButton leadId={l.id} hasEmail={Boolean(l.email)} templates={templateOptions} />
+                          <LeadRowActions
+                            leadId={l.id}
+                            screeningStatus={l.screening_status}
+                            doNotCall={l.do_not_call}
+                            assignedTo={l.assigned_to}
+                            agents={(agents ?? []).map((a) => ({
+                              id: a.user_id,
+                              name:
+                                (a as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
+                            }))}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {(leads ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">
+                    <td colSpan={19} className="px-3 py-8 text-center text-sm text-muted">
                       No leads yet. Add one, or wait for the bulk import wizard (Phase 7).
                     </td>
                   </tr>
