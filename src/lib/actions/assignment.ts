@@ -19,7 +19,12 @@ export async function assignAgentToCampaign(
   userId: string,
   dailyTarget: number,
 ): Promise<ActionResult> {
+  console.error("[DIAG assignAgentToCampaign] called", { campaignId, userId, dailyTarget });
   const supabase = await createClient();
+  const {
+    data: { user: caller },
+  } = await supabase.auth.getUser();
+  console.error("[DIAG assignAgentToCampaign] caller", { callerId: caller?.id ?? null });
   // .select() matters here: an upsert that RLS filters to zero rows
   // succeeds without an error (same footgun as assignLead below), so
   // without checking the returned rows this reported a clean "added"
@@ -31,6 +36,8 @@ export async function assignAgentToCampaign(
       { onConflict: "campaign_id,user_id" },
     )
     .select("campaign_id");
+
+  console.error("[DIAG assignAgentToCampaign] upsert result", { data, error });
 
   if (error) return { error: error.message };
   if (!data || data.length === 0) {
