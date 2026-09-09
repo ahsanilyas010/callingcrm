@@ -22,7 +22,7 @@ export default async function PeoplePage() {
   }
 
   const supabase = await createClient();
-  const [{ data: people }, { data: teams }, { data: clients }] = await Promise.all([
+  const [{ data: people }, { data: teams }, { data: clients }, { data: campaigns }] = await Promise.all([
     supabase
       .from("profiles")
       // profiles.team_id -> teams.id AND teams.team_lead_id -> profiles.id
@@ -34,6 +34,7 @@ export default async function PeoplePage() {
       .order("full_name"),
     supabase.from("teams").select("id, name").order("name"),
     supabase.from("clients").select("id, name").order("name"),
+    supabase.from("campaigns").select("id, name, code").order("name"),
   ]);
 
   const canCreate = profile.role === "super_admin" || profile.role === "ops_manager";
@@ -101,7 +102,12 @@ export default async function PeoplePage() {
                 </td>
                 {canCreate && (
                   <td className="px-3 py-1.5 text-right">
-                    <PeopleRowActions userId={p.id} isActive={p.is_active} />
+                    <PeopleRowActions
+                      userId={p.id}
+                      userName={p.full_name}
+                      isActive={p.is_active}
+                      campaigns={campaigns ?? []}
+                    />
                   </td>
                 )}
               </tr>
