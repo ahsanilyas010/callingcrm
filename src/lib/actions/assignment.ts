@@ -20,14 +20,22 @@ export async function assignAgentToCampaign(
   dailyTarget: number,
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  // .select() matters here: an upsert that RLS filters to zero rows
+  // succeeds without an error (same footgun as assignLead below), so
+  // without checking the returned rows this reported a clean "added"
+  // toast while the roster stayed untouched.
+  const { data, error } = await supabase
     .from("campaign_assignments")
     .upsert(
       { campaign_id: campaignId, user_id: userId, daily_target: dailyTarget },
       { onConflict: "campaign_id,user_id" },
-    );
+    )
+    .select("campaign_id");
 
   if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "Couldn't add that agent — the campaign or agent may not exist, or you may not have access." };
+  }
   revalidatePath("/admin/campaigns", "layout");
   return { ok: true };
 }
@@ -37,13 +45,17 @@ export async function removeAgentFromCampaign(campaignId: string, userId: string
   // Leads already assigned to this agent on this campaign stay assigned —
   // pulling someone off a roster shouldn't silently orphan what they were
   // already working. Free them up separately if that's the intent.
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("campaign_assignments")
     .delete()
     .eq("campaign_id", campaignId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("campaign_id");
 
   if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "That agent wasn't on this roster — nothing to remove." };
+  }
   revalidatePath("/admin/campaigns", "layout");
   return { ok: true };
 }
