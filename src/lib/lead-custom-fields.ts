@@ -35,6 +35,7 @@ export const CUSTOM_FIELD_LABELS: Record<string, string> = {
   web: "Web",
   contact: "Contact",
   comments: "Comments",
+  source_contact_email: "Contact email (source)",
   // Written by the agent-facing edit form (src/app/(app)/workspace/leads) —
   // the one custom key that's live/editable rather than imported history.
   agent_notes: "My notes",
