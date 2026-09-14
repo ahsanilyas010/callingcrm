@@ -76,6 +76,7 @@ export function Header({
   const title = useTitle();
   const [now, setNow] = useState<Date | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const isStaff = profile.role !== "client_viewer";
 
   useEffect(() => {
     setNow(new Date());
@@ -97,13 +98,14 @@ export function Header({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-        <AttendanceControl initialSession={initialSession} />
-
-        <Separator orientation="vertical" className="hidden h-5 sm:block" />
-
-        <FollowupTray userId={profile.id} initial={initialFollowups} />
-
-        <Separator orientation="vertical" className="hidden h-5 md:block" />
+        {isStaff && (
+          <>
+            <AttendanceControl initialSession={initialSession} />
+            <Separator orientation="vertical" className="hidden h-5 sm:block" />
+            <FollowupTray userId={profile.id} initial={initialFollowups} />
+            <Separator orientation="vertical" className="hidden h-5 md:block" />
+          </>
+        )}
 
         <div className="hidden items-center gap-1.5 text-xs md:flex">
           <span className="tabular text-muted">{profile.timezone}</span>
@@ -137,9 +139,11 @@ export function Header({
               {profile.full_name}
               <Badge variant="blue">{ROLE_LABEL[profile.role]}</Badge>
             </DropdownMenuLabel>
-            <DropdownMenuItem onSelect={() => setLeaveOpen(true)}>
-              <CalendarPlus className="mr-2 h-3.5 w-3.5" /> Request leave
-            </DropdownMenuItem>
+            {isStaff && (
+              <DropdownMenuItem onSelect={() => setLeaveOpen(true)}>
+                <CalendarPlus className="mr-2 h-3.5 w-3.5" /> Request leave
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="danger"
