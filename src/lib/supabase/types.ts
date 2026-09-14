@@ -1563,6 +1563,8 @@ export type Database = {
       }
       source_fetch_runs: {
         Row: {
+          assigned_team_id: string | null
+          assigned_to: string | null
           campaign_id: string | null
           data_source_id: string
           error: string | null
@@ -1573,11 +1575,14 @@ export type Database = {
           records_found: number
           records_imported: number
           records_rejected: number
+          skip_screening: boolean
           started_at: string
           status: string
           triggered_by: string | null
         }
         Insert: {
+          assigned_team_id?: string | null
+          assigned_to?: string | null
           campaign_id?: string | null
           data_source_id: string
           error?: string | null
@@ -1588,11 +1593,14 @@ export type Database = {
           records_found?: number
           records_imported?: number
           records_rejected?: number
+          skip_screening?: boolean
           started_at?: string
           status?: string
           triggered_by?: string | null
         }
         Update: {
+          assigned_team_id?: string | null
+          assigned_to?: string | null
           campaign_id?: string | null
           data_source_id?: string
           error?: string | null
@@ -1603,11 +1611,26 @@ export type Database = {
           records_found?: number
           records_imported?: number
           records_rejected?: number
+          skip_screening?: boolean
           started_at?: string
           status?: string
           triggered_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "source_fetch_runs_assigned_team_id_fkey"
+            columns: ["assigned_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_fetch_runs_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "source_fetch_runs_campaign_id_fkey"
             columns: ["campaign_id"]
