@@ -19,6 +19,10 @@ export interface ImportOutcome {
   imported: number;
   rejected: number;
   rejections: { record: NormalisedLead; reason: string }[];
+  // Ids of the rows actually inserted this run — lets a caller (e.g. a
+  // direct-to-agent upload) act on exactly this batch's leads afterward
+  // without guessing at a created_at window.
+  insertedIds: string[];
 }
 
 export async function importLeads(params: {
@@ -39,7 +43,7 @@ export async function importLeads(params: {
     throw new Error("No lawful_basis on file for this data source — refusing to commit.");
   }
 
-  const outcome: ImportOutcome = { imported: 0, rejected: 0, rejections: [] };
+  const outcome: ImportOutcome = { imported: 0, rejected: 0, rejections: [], insertedIds: [] };
 
   for (const record of records) {
     if (!record.phoneRaw) {
@@ -74,7 +78,7 @@ export async function importLeads(params: {
       .eq("phone_e164", phoneE164)
       .maybeSingle();
 
-    const { error } = await supabase.from("leads").insert({
+    const { data: inserted, error } = await supabase.from("leads").insert({
       campaign_id: campaignId,
       data_source_id: dataSourceId,
       batch_id: batchId ?? null,
@@ -103,18 +107,19 @@ export async function importLeads(params: {
       consent_status: record.consent?.status ?? null,
       consent_source: record.consent?.source ?? null,
       consent_captured_at: record.consent?.capturedAt ?? null,
-    });
+    }).select("id").single();
 
-    if (error) {
+    if (error || !inserted) {
       outcome.rejected += 1;
       outcome.rejections.push({
         record,
-        reason: error.code === "23505" ? "Duplicate phone number in this campaign." : error.message,
+        reason: error?.code === "23505" ? "Duplicate phone number in this campaign." : (error?.message ?? "Insert failed."),
       });
       continue;
     }
 
     outcome.imported += 1;
+    outcome.insertedIds.push(inserted.id);
   }
 
   return outcome;

@@ -81,9 +81,13 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 export function VendorCsvDialog({
   campaigns,
   dataSources,
+  agents,
+  teams,
 }: {
   campaigns: { id: string; name: string; code: string; market: string | null }[];
   dataSources: { id: string; name: string }[];
+  agents: { id: string; full_name: string | null; team_id: string | null }[];
+  teams: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(uploadVendorCsv, initialState);
@@ -94,6 +98,9 @@ export function VendorCsvDialog({
   const [dataSourceId, setDataSourceId] = useState(dataSources[0]?.id ?? "");
   const [country, setCountry] = useState(marketToCountryHint(campaigns[0]?.market));
   const [countryTouched, setCountryTouched] = useState(false);
+  const [assignMode, setAssignMode] = useState<"none" | "agent" | "team">("none");
+  const [assignAgentId, setAssignAgentId] = useState("");
+  const [assignTeamId, setAssignTeamId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -127,6 +134,9 @@ export function VendorCsvDialog({
       setHeaders([]);
       setMapping({});
       setAutoMapped(false);
+      setAssignMode("none");
+      setAssignAgentId("");
+      setAssignTeamId("");
       router.refresh();
     }
   }, [state.ok, router]);
@@ -177,6 +187,8 @@ export function VendorCsvDialog({
           <input type="hidden" name="campaign_id" value={campaignId} />
           <input type="hidden" name="data_source_id" value={dataSourceId} />
           <input type="hidden" name="country" value={country} />
+          <input type="hidden" name="assign_to_agent_id" value={assignMode === "agent" ? assignAgentId : ""} />
+          <input type="hidden" name="assign_to_team_id" value={assignMode === "team" ? assignTeamId : ""} />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -235,6 +247,64 @@ export function VendorCsvDialog({
                 <SelectItem value="PK">PK — Pakistan</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5 rounded-md border border-line p-3">
+            <Label>Assign to (optional)</Label>
+            <p className="text-xs text-muted">
+              Tag every imported lead with an agent or team right away, skipping screening and the
+              manual &ldquo;Assign to...&rdquo; step — leads land already assigned instead of
+              Unassigned. Leave as None to import generically, as today.
+            </p>
+            <div className="flex gap-3">
+              <Select
+                value={assignMode}
+                onValueChange={(v) => {
+                  setAssignMode(v as "none" | "agent" | "team");
+                  setAssignAgentId("");
+                  setAssignTeamId("");
+                }}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                  <SelectItem value="team">Team</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {assignMode === "agent" && (
+                <Select value={assignAgentId} onValueChange={setAssignAgentId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Pick an agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.full_name ?? "Unnamed agent"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {assignMode === "team" && (
+                <Select value={assignTeamId} onValueChange={setAssignTeamId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Pick a team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -354,7 +424,9 @@ export function VendorCsvDialog({
                 !dataSourceId ||
                 headers.length === 0 ||
                 !mapping.map_phone ||
-                mapping.map_phone === "__none"
+                mapping.map_phone === "__none" ||
+                (assignMode === "agent" && !assignAgentId) ||
+                (assignMode === "team" && !assignTeamId)
               }
             />
           </DialogFooter>

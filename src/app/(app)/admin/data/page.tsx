@@ -17,17 +17,32 @@ export default async function DataPage() {
   if (!["super_admin", "ops_manager", "team_lead"].includes(profile.role)) redirect("/");
 
   const supabase = await createClient();
-  const [{ data: dataSources }, { data: campaigns }, { data: fetchRuns }, { data: performance }] =
-    await Promise.all([
-      supabase.from("data_sources").select("*").order("created_at", { ascending: false }),
-      supabase.from("campaigns").select("id, name, code, market").order("name"),
-      supabase
-        .from("source_fetch_runs")
-        .select("*, data_sources(name), campaigns(name, code), profiles(full_name)")
-        .order("started_at", { ascending: false })
-        .limit(30),
-      supabase.from("v_source_performance").select("*").order("leads_loaded", { ascending: false }),
-    ]);
+  const [
+    { data: dataSources },
+    { data: campaigns },
+    { data: fetchRuns },
+    { data: performance },
+    { data: agents },
+    { data: teams },
+  ] = await Promise.all([
+    supabase.from("data_sources").select("*").order("created_at", { ascending: false }),
+    supabase.from("campaigns").select("id, name, code, market").order("name"),
+    supabase
+      .from("source_fetch_runs")
+      .select(
+        "*, data_sources(name), campaigns(name, code), profiles!source_fetch_runs_triggered_by_fkey(full_name), assignee:profiles!source_fetch_runs_assigned_to_fkey(full_name), assigned_team:teams(name)",
+      )
+      .order("started_at", { ascending: false })
+      .limit(30),
+    supabase.from("v_source_performance").select("*").order("leads_loaded", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name, team_id")
+      .eq("role", "agent")
+      .eq("is_active", true)
+      .order("full_name"),
+    supabase.from("teams").select("id, name").order("name"),
+  ]);
 
   const connectorSources = (dataSources ?? []).filter(
     (d) => (d.config as DataSourceConfig | null)?.connector_key,
@@ -56,6 +71,8 @@ export default async function DataPage() {
               <VendorCsvDialog
                 campaigns={campaigns ?? []}
                 dataSources={plainSources.map((d) => ({ id: d.id, name: d.name }))}
+                agents={agents ?? []}
+                teams={teams ?? []}
               />
               <CreateDataSourceDialog />
             </div>
@@ -161,6 +178,7 @@ export default async function DataPage() {
                   <th className="px-3 py-2 font-medium">Source</th>
                   <th className="px-3 py-2 font-medium">Campaign</th>
                   <th className="px-3 py-2 font-medium">Triggered by</th>
+                  <th className="px-3 py-2 font-medium">Assigned</th>
                   <th className="px-3 py-2 font-medium">Found</th>
                   <th className="px-3 py-2 font-medium">Imported</th>
                   <th className="px-3 py-2 font-medium">Rejected</th>
@@ -169,34 +187,49 @@ export default async function DataPage() {
                 </tr>
               </thead>
               <tbody>
-                {(fetchRuns ?? []).map((r) => (
-                  <tr key={r.id} className="h-[38px] border-b border-line last:border-0">
-                    <td className="px-3 py-1.5 font-medium text-ink">
-                      {(r as { data_sources?: { name: string } | null }).data_sources?.name ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted">
-                      {(r as { campaigns?: { name: string; code: string } | null }).campaigns?.code ??
-                        "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted">
-                      {(r as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 tabular text-muted">{r.records_found}</td>
-                    <td className="px-3 py-1.5 tabular text-muted">{r.records_imported}</td>
-                    <td className="px-3 py-1.5 tabular text-muted">{r.records_rejected}</td>
-                    <td className="px-3 py-1.5">
-                      {r.status === "complete" && <Badge variant="confirm">Complete</Badge>}
-                      {r.status === "running" && <Badge variant="warning">Running</Badge>}
-                      {r.status === "failed" && <Badge variant="danger">Failed</Badge>}
-                    </td>
-                    <td className="px-3 py-1.5 tabular text-xs text-muted">
-                      {new Date(r.started_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                {(fetchRuns ?? []).map((r) => {
+                  const run = r as typeof r & {
+                    data_sources?: { name: string } | null;
+                    campaigns?: { name: string; code: string } | null;
+                    profiles?: { full_name: string } | null;
+                    assignee?: { full_name: string } | null;
+                    assigned_team?: { name: string } | null;
+                  };
+                  return (
+                    <tr key={r.id} className="h-[38px] border-b border-line last:border-0">
+                      <td className="px-3 py-1.5 font-medium text-ink">
+                        {run.data_sources?.name ?? "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-xs text-muted">{run.campaigns?.code ?? "—"}</td>
+                      <td className="px-3 py-1.5 text-xs text-muted">
+                        {run.profiles?.full_name ?? "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-xs">
+                        {run.assignee?.full_name ? (
+                          <Badge variant="confirm">{run.assignee.full_name}</Badge>
+                        ) : run.assigned_team?.name ? (
+                          <Badge variant="confirm">{run.assigned_team.name} (team)</Badge>
+                        ) : (
+                          <span className="text-muted">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 tabular text-muted">{r.records_found}</td>
+                      <td className="px-3 py-1.5 tabular text-muted">{r.records_imported}</td>
+                      <td className="px-3 py-1.5 tabular text-muted">{r.records_rejected}</td>
+                      <td className="px-3 py-1.5">
+                        {r.status === "complete" && <Badge variant="confirm">Complete</Badge>}
+                        {r.status === "running" && <Badge variant="warning">Running</Badge>}
+                        {r.status === "failed" && <Badge variant="danger">Failed</Badge>}
+                      </td>
+                      <td className="px-3 py-1.5 tabular text-xs text-muted">
+                        {new Date(r.started_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {(fetchRuns ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">
+                    <td colSpan={9} className="px-3 py-8 text-center text-sm text-muted">
                       No fetch runs yet.
                     </td>
                   </tr>
