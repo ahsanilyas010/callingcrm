@@ -44,4 +44,15 @@ export const CUSTOM_FIELD_LABELS: Record<string, string> = {
   contact_role: "Role on project",
   project_value: "Project value",
   company_ref: "Company ref",
+  // "CRM & ERP Local" outreach sheet — kept as the requester's own exact
+  // columns (industry/POC/pipeline stage/call script) rather than mapped
+  // into this app's generic project_name/source_notes fields.
+  industry: "Industry",
+  poc: "POC",
+  current_status: "Current status",
+  crm_stage: "CRM stage",
+  priority: "Priority",
+  what_to_sell: "What to sell",
+  call_hook: "Call hook (exact line)",
+  next_action: "Next action",
 };
