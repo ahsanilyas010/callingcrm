@@ -39,6 +39,19 @@ const ROLES = [
   { value: "client_viewer", label: "Client viewer" },
 ];
 
+// A free-text timezone field once let someone type "UK" instead of
+// "Europe/London" — an invalid IANA zone that crashes the header's clock
+// (and therefore every page) for that account. Constrained to this app's
+// actual operating markets (PK/UK/US) so a typo can't get through again.
+const TIMEZONES = [
+  { value: "Asia/Karachi", label: "Asia/Karachi (PK)" },
+  { value: "Europe/London", label: "Europe/London (UK)" },
+  { value: "America/New_York", label: "America/New_York (US, Eastern)" },
+  { value: "America/Chicago", label: "America/Chicago (US, Central)" },
+  { value: "America/Denver", label: "America/Denver (US, Mountain)" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles (US, Pacific)" },
+];
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -58,6 +71,7 @@ export function CreateUserDialog({
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createUser, initialState);
   const [role, setRole] = useState("agent");
+  const [timezone, setTimezone] = useState("Asia/Karachi");
   const [teamId, setTeamId] = useState("");
   const [clientId, setClientId] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -133,7 +147,19 @@ export function CreateUserDialog({
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="timezone">Timezone</Label>
-                    <Input id="timezone" name="timezone" defaultValue="Asia/Karachi" />
+                    <Select value={timezone} onValueChange={setTimezone}>
+                      <SelectTrigger id="timezone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONES.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" name="timezone" value={timezone} />
                   </div>
                 </div>
                 {role !== "client_viewer" && (
