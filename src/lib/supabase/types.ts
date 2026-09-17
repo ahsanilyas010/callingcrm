@@ -483,6 +483,42 @@ export type Database = {
           },
         ]
       }
+      client_agent_labels: {
+        Row: {
+          agent_id: string
+          client_id: string
+          created_at: string
+          label: string
+        }
+        Insert: {
+          agent_id: string
+          client_id: string
+          created_at?: string
+          label: string
+        }
+        Update: {
+          agent_id?: string
+          client_id?: string
+          created_at?: string
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_agent_labels_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_agent_labels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           contact_email: string | null
@@ -491,6 +527,7 @@ export type Database = {
           country: string | null
           created_at: string
           dpa_signed_on: string | null
+          full_visibility: boolean
           id: string
           is_active: boolean
           is_data_controller: boolean
@@ -504,6 +541,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           dpa_signed_on?: string | null
+          full_visibility?: boolean
           id?: string
           is_active?: boolean
           is_data_controller?: boolean
@@ -517,6 +555,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           dpa_signed_on?: string | null
+          full_visibility?: boolean
           id?: string
           is_active?: boolean
           is_data_controller?: boolean
@@ -2139,6 +2178,75 @@ export type Database = {
           loaded: number
           market: string | null
           qualified: number
+        }[]
+      }
+      get_client_leads: {
+        Args: { p_client_id?: string }
+        Returns: {
+          id: string
+          campaign_id: string
+          campaign_name: string
+          campaign_code: string
+          first_name: string | null
+          last_name: string | null
+          company_name: string | null
+          job_title: string | null
+          phone_e164: string
+          email: string | null
+          address_line1: string | null
+          city: string | null
+          region: string | null
+          postcode: string | null
+          status: string
+          screening_status: string
+          do_not_call: boolean
+          assigned_agent_label: string | null
+          attempt_count: number
+          custom: Json
+          created_at: string
+        }[]
+      }
+      get_client_call_log: {
+        Args: { p_client_id?: string }
+        Returns: {
+          id: string
+          lead_id: string
+          campaign_id: string
+          campaign_code: string
+          first_name: string | null
+          last_name: string | null
+          company_name: string | null
+          phone_e164: string
+          agent_label: string | null
+          attempt_no: number
+          disposition_code: string | null
+          disposition_label: string | null
+          category: string | null
+          started_at: string
+          ended_at: string | null
+          talk_seconds: number | null
+          wrap_seconds: number | null
+          notes: string | null
+        }[]
+      }
+      get_client_followups: {
+        Args: { p_client_id?: string }
+        Returns: {
+          id: string
+          lead_id: string
+          campaign_id: string
+          campaign_code: string
+          first_name: string | null
+          last_name: string | null
+          company_name: string | null
+          phone_e164: string
+          agent_label: string | null
+          followup_type: string
+          due_at: string
+          note: string | null
+          priority: string
+          status: string
+          snooze_count: number
         }[]
       }
       is_manager: { Args: never; Returns: boolean }

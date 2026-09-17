@@ -28,6 +28,8 @@ export interface ClientFunnelResult {
   isManager: boolean;
   rows: ClientFunnelRow[];
   dispositions: ClientDispositionRow[];
+  clientId: string | null;
+  fullVisibility: boolean;
 }
 
 export type ClientFunnelOutcome =
@@ -68,10 +70,16 @@ export async function loadClientFunnel(clientIdParam: string | null): Promise<Cl
   if (dispositionsError) return { ok: false, status: 500, error: dispositionsError.message };
 
   let clientName = "All clients";
+  let fullVisibility = false;
   const lookupId = isManager ? targetClientId : profile.client_id;
   if (lookupId) {
-    const { data: client } = await supabase.from("clients").select("name").eq("id", lookupId).single();
+    const { data: client } = await supabase
+      .from("clients")
+      .select("name, full_visibility")
+      .eq("id", lookupId)
+      .single();
     clientName = client?.name ?? "Unknown client";
+    fullVisibility = client?.full_visibility ?? false;
   } else if (!isManager) {
     clientName = "No client linked to this account";
   }
@@ -83,6 +91,8 @@ export async function loadClientFunnel(clientIdParam: string | null): Promise<Cl
       isManager,
       rows: (rows as ClientFunnelRow[]) ?? [],
       dispositions: (dispositions as ClientDispositionRow[]) ?? [],
+      clientId: lookupId ?? null,
+      fullVisibility,
     },
   };
 }
