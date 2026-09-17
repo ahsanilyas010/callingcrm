@@ -3,10 +3,10 @@ import { BRAND } from "@/lib/brand";
 
 /**
  * Placeholder brand mark — three interlocking gears in the exact brand
- * hexes, standing in for the real Assorted logo (`3.png` / SVG) which
+ * hexes, standing in for the real DialDesk logo (`3.png` / SVG) which
  * hasn't been supplied to this build. Swap for the real asset by dropping
  * files into /public/brand and replacing this component's usages with
- * <img src="/brand/assorted-mark.png" ... /> per spec section 2.
+ * <img src="/brand/dialdesk-mark.png" ... /> per spec section 2.
  */
 export function BrandMark({ className, size = 28 }: { className?: string; size?: number }) {
   return (
