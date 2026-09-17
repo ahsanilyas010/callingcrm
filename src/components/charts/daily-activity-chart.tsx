@@ -1,6 +1,19 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+
+const COLORS = [
+  "var(--color-brand-blue)",
+  "var(--color-brand-green)",
+  "var(--color-brand-orange)",
+  "var(--color-warning)",
+  "var(--color-danger)",
+  "var(--color-brand-blue-hover)",
+  "var(--color-brand-green-tint-2)",
+  "var(--color-brand-orange-tint-2)",
+  "var(--color-brand-blue-tint-2)",
+  "var(--color-muted)",
+];
 
 export function DailyActivityChart({
   label,
@@ -11,28 +24,31 @@ export function DailyActivityChart({
   data: { day: string; value: number }[];
   valueLabel: string;
 }) {
+  const chartData = data.map((d) => ({ ...d, day: d.day.slice(5) }));
+
   return (
     <div>
       <p className="mb-2 text-xs font-medium text-ink">{label}</p>
-      <div className="h-[180px] w-full">
+      <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
-            <XAxis
-              dataKey="day"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(d: string) => d.slice(5)}
-            />
-            <YAxis fontSize={10} tickLine={false} axisLine={false} width={28} />
+          <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+            <Pie data={chartData} dataKey="value" nameKey="day" cx="35%" cy="50%" outerRadius={85}>
+              {chartData.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
             <Tooltip
-              cursor={{ fill: "var(--color-canvas)" }}
               contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "var(--color-line)" }}
               formatter={(value) => [value, valueLabel]}
             />
-            <Bar dataKey="value" fill="var(--color-brand-blue)" radius={[3, 3, 0, 0]} />
-          </BarChart>
+            <Legend
+              layout="vertical"
+              align="right"
+              verticalAlign="middle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 10, maxHeight: 220, overflowY: "auto" }}
+            />
+          </PieChart>
         </ResponsiveContainer>
       </div>
     </div>

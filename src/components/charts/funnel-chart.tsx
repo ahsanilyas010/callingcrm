@@ -1,6 +1,16 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+
+const COLORS = [
+  "var(--color-brand-blue)",
+  "var(--color-brand-green)",
+  "var(--color-brand-orange)",
+  "var(--color-warning)",
+  "var(--color-danger)",
+  "var(--color-brand-blue-hover)",
+  "var(--color-muted)",
+];
 
 export function FunnelChart({
   label,
@@ -12,25 +22,25 @@ export function FunnelChart({
   return (
     <div>
       <p className="mb-2 text-xs font-medium text-ink">{label}</p>
-      <div className="h-[220px] w-full">
+      <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-line)" />
-            <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} />
-            <YAxis
-              type="category"
-              dataKey="stage"
-              fontSize={11}
-              tickLine={false}
-              axisLine={false}
-              width={80}
-            />
+          <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+            <Pie data={data} dataKey="value" nameKey="stage" cx="35%" cy="50%" outerRadius={85}>
+              {data.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
             <Tooltip
-              cursor={{ fill: "var(--color-canvas)" }}
               contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "var(--color-line)" }}
             />
-            <Bar dataKey="value" fill="var(--color-brand-blue)" radius={[0, 4, 4, 0]} />
-          </BarChart>
+            <Legend
+              layout="vertical"
+              align="right"
+              verticalAlign="middle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 11 }}
+            />
+          </PieChart>
         </ResponsiveContainer>
       </div>
     </div>
