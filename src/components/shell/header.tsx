@@ -32,6 +32,29 @@ const ROLE_LABEL: Record<string, string> = {
   client_viewer: "Client",
 };
 
+// profile.timezone is a free-text field (see admin/people/create-user-dialog)
+// — an invalid IANA zone (e.g. "UK" instead of "Europe/London") makes
+// toLocaleTimeString throw a RangeError. That throw happens inside the
+// header, which every single page renders, so an unvalidated typo here
+// took the entire app down for that one account on every page load. Falls
+// back to the browser's local time rather than letting the header crash.
+function safeTimeString(date: Date, timeZone: string) {
+  try {
+    return date.toLocaleTimeString("en-GB", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }
+}
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -110,14 +133,7 @@ export function Header({
         <div className="hidden items-center gap-1.5 text-xs md:flex">
           <span className="tabular text-muted">{profile.timezone}</span>
           <span className="tabular font-medium text-ink">
-            {now
-              ? now.toLocaleTimeString("en-GB", {
-                  timeZone: profile.timezone,
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })
-              : "--:--:--"}
+            {now ? safeTimeString(now, profile.timezone) : "--:--:--"}
           </span>
         </div>
 
