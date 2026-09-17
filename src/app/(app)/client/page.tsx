@@ -4,12 +4,25 @@ import { requireProfile } from "@/lib/auth/current-profile";
 import { createClient } from "@/lib/supabase/server";
 import { loadClientFunnel } from "@/lib/reports/client-funnel";
 import { loadClientAgentActivity } from "@/lib/reports/client-activity";
+import { loadClientFullVisibility } from "@/lib/reports/client-full-visibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import { DailyActivityChart } from "@/components/charts/daily-activity-chart";
 import { ClientSelector } from "./client-selector";
+
+function leadName(l: { first_name: string | null; last_name: string | null; company_name: string | null }) {
+  return [l.first_name, l.last_name].filter(Boolean).join(" ") || l.company_name || "—";
+}
+
+function fmtMinSec(seconds: number | null) {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 function fmtHours(minutes: number) {
   return `${(minutes / 60).toFixed(1)}h`;
@@ -67,7 +80,10 @@ export default async function ClientReportsPage({
     );
   }
 
-  const { clientName, rows, dispositions } = outcome.result;
+  const { clientName, rows, dispositions, fullVisibility } = outcome.result;
+  const fullOutcome = fullVisibility
+    ? await loadClientFullVisibility(isManager ? (clientIdParam ?? null) : null)
+    : null;
   const activityRows = activityOutcome.ok ? activityOutcome.rows : [];
   const todayStr = new Date().toISOString().slice(0, 10);
   const today = activityRows.find((r) => r.day === todayStr);
@@ -271,11 +287,204 @@ export default async function ClientReportsPage({
         </CardContent>
       </Card>
 
+      {fullOutcome?.ok && (
+        <Card className="mt-4 animate-slide-up">
+          <CardHeader>
+            <CardTitle>Full activity</CardTitle>
+            <p className="text-xs text-muted">
+              Every lead, call outcome, and scheduled follow-up on your campaigns — everything an
+              internal admin sees, except which agent worked it (shown as an anonymous label
+              instead of a name).
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Tabs defaultValue="leads">
+              <TabsList className="mx-4 mt-1">
+                <TabsTrigger value="leads">Leads ({fullOutcome.leads.length})</TabsTrigger>
+                <TabsTrigger value="calls">Call log ({fullOutcome.callLog.length})</TabsTrigger>
+                <TabsTrigger value="followups">Appointments ({fullOutcome.followups.length})</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="leads" className="mt-3">
+                {fullOutcome.leads.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted">No leads yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
+                          <th className="px-4 py-2 font-medium">Name</th>
+                          <th className="px-4 py-2 font-medium">Phone</th>
+                          <th className="px-4 py-2 font-medium">Campaign</th>
+                          <th className="px-4 py-2 font-medium">Status</th>
+                          <th className="px-4 py-2 font-medium">Screening</th>
+                          <th className="px-4 py-2 font-medium">Assigned</th>
+                          <th className="px-4 py-2 font-medium text-right">Attempts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fullOutcome.leads.map((l) => (
+                          <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
+                            <td className="px-4 py-1.5 font-medium text-ink">{leadName(l)}</td>
+                            <td className="px-4 py-1.5 tabular text-muted">{l.phone_e164}</td>
+                            <td className="px-4 py-1.5 text-xs text-muted">{l.campaign_code}</td>
+                            <td className="px-4 py-1.5">
+                              {l.do_not_call ? (
+                                <Badge variant="danger">Suppressed</Badge>
+                              ) : (
+                                <Badge variant="neutral">{l.status.replace(/_/g, " ")}</Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-1.5 text-xs text-muted">{l.screening_status}</td>
+                            <td className="px-4 py-1.5 text-xs text-muted">
+                              {l.assigned_agent_label ?? <span className="text-warning">Unassigned</span>}
+                            </td>
+                            <td className="px-4 py-1.5 tabular text-right text-muted">{l.attempt_count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="calls" className="mt-3">
+                {fullOutcome.callLog.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted">No calls logged yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
+                          <th className="px-4 py-2 font-medium">When</th>
+                          <th className="px-4 py-2 font-medium">Lead</th>
+                          <th className="px-4 py-2 font-medium">Agent</th>
+                          <th className="px-4 py-2 font-medium">Disposition</th>
+                          <th className="px-4 py-2 font-medium text-right">Talk</th>
+                          <th className="px-4 py-2 font-medium">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fullOutcome.callLog.map((c) => (
+                          <tr key={c.id} className="h-[38px] border-b border-line last:border-0">
+                            <td className="px-4 py-1.5 tabular text-xs text-muted">
+                              {new Date(c.started_at).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-1.5 text-ink">
+                              {leadName(c)} <span className="tabular text-muted">({c.phone_e164})</span>
+                            </td>
+                            <td className="px-4 py-1.5 text-xs text-muted">{c.agent_label ?? "—"}</td>
+                            <td className="px-4 py-1.5">
+                              {c.disposition_label ? (
+                                <Badge variant={CATEGORY_BADGE[c.category ?? ""] ?? "neutral"}>
+                                  {c.disposition_label}
+                                </Badge>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-4 py-1.5 tabular text-right text-muted">
+                              {fmtMinSec(c.talk_seconds)}
+                            </td>
+                            <td
+                              className="max-w-[240px] truncate px-4 py-1.5 text-muted"
+                              title={c.notes ?? undefined}
+                            >
+                              {c.notes ?? "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="followups" className="mt-3">
+                {fullOutcome.followups.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted">No follow-ups scheduled.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
+                          <th className="px-4 py-2 font-medium">Due</th>
+                          <th className="px-4 py-2 font-medium">Lead</th>
+                          <th className="px-4 py-2 font-medium">Agent</th>
+                          <th className="px-4 py-2 font-medium">Type</th>
+                          <th className="px-4 py-2 font-medium">Priority</th>
+                          <th className="px-4 py-2 font-medium">Status</th>
+                          <th className="px-4 py-2 font-medium">Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fullOutcome.followups.map((f) => (
+                          <tr key={f.id} className="h-[38px] border-b border-line last:border-0">
+                            <td className="px-4 py-1.5 tabular text-xs text-muted">
+                              {new Date(f.due_at).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-1.5 text-ink">
+                              {leadName(f)} <span className="tabular text-muted">({f.phone_e164})</span>
+                            </td>
+                            <td className="px-4 py-1.5 text-xs text-muted">{f.agent_label ?? "—"}</td>
+                            <td className="px-4 py-1.5 text-xs text-muted">
+                              {f.followup_type.replace(/_/g, " ")}
+                            </td>
+                            <td className="px-4 py-1.5">
+                              <Badge
+                                variant={
+                                  f.priority === "high" ? "danger" : f.priority === "low" ? "neutral" : "warning"
+                                }
+                              >
+                                {f.priority}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-1.5">
+                              <Badge
+                                variant={
+                                  f.status === "done"
+                                    ? "confirm"
+                                    : f.status === "missed" || f.status === "cancelled"
+                                      ? "danger"
+                                      : "warning"
+                                }
+                              >
+                                {f.status}
+                              </Badge>
+                            </td>
+                            <td
+                              className="max-w-[240px] truncate px-4 py-1.5 text-muted"
+                              title={f.note ?? undefined}
+                            >
+                              {f.note ?? "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
+
       <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-green-text" />
-        Aggregate counts only — no lead names, phone numbers, emails, or agent identities are ever
-        shown here. That is enforced by the database itself (this account has no row-level access
-        to individual leads), not just by what this page chooses to display.
+        {fullVisibility ? (
+          <>
+            Full visibility enabled for this account — lead detail, call outcomes, and follow-ups
+            are all shown. Agent identities are still never shown by name, only a consistent
+            anonymous label.
+          </>
+        ) : (
+          <>
+            Aggregate counts only — no lead names, phone numbers, emails, or agent identities are
+            ever shown here. That is enforced by the database itself (this account has no
+            row-level access to individual leads), not just by what this page chooses to display.
+          </>
+        )}
       </p>
     </div>
   );
