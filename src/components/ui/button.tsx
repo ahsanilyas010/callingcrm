@@ -12,15 +12,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Primary blue — the only brand colour that carries white text.
-        primary: "bg-brand-blue text-white hover:bg-brand-blue-hover shadow-sm",
+        primary:
+          "bg-brand-blue text-white shadow-sm hover:-translate-y-px hover:bg-brand-blue-hover hover:shadow-md hover:shadow-brand-blue/25",
         // Attention accent — dark ink text on orange, never white.
-        accent: "bg-brand-orange text-ink hover:brightness-95 shadow-sm",
+        accent:
+          "bg-brand-orange text-ink shadow-sm hover:-translate-y-px hover:brightness-95 hover:shadow-md hover:shadow-brand-orange/30",
         // Confirmation — dark ink text on green, never white.
-        confirm: "bg-brand-green text-ink hover:brightness-95 shadow-sm",
+        confirm:
+          "bg-brand-green text-ink shadow-sm hover:-translate-y-px hover:brightness-95 hover:shadow-md hover:shadow-brand-green/30",
         secondary:
-          "bg-white text-ink border border-line hover:bg-canvas shadow-sm",
+          "bg-white text-ink border border-line shadow-sm hover:-translate-y-px hover:bg-canvas hover:border-brand-blue-tint-2 hover:shadow-md",
         ghost: "text-ink hover:bg-canvas",
-        danger: "bg-danger text-white hover:brightness-90 shadow-sm",
+        danger:
+          "bg-danger text-white shadow-sm hover:-translate-y-px hover:brightness-90 hover:shadow-md hover:shadow-danger/30",
         link: "text-brand-blue underline-offset-4 hover:underline",
       },
       size: {

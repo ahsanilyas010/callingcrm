@@ -40,6 +40,22 @@ const ICON_MAP: Record<NavIconName, LucideIcon> = {
   Building2,
 };
 
+// Per-icon (not per-position) colour so a given section always gets the
+// same accent regardless of which other items a given role sees — kept to
+// the three brand hues, same rotation as StatTile.
+const ICON_COLOR: Record<NavIconName, { icon: string; active: string }> = {
+  Activity: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+  BarChart3: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
+  Users: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
+  Megaphone: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+  CalendarCheck: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
+  ShieldCheck: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
+  Database: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+  Lock: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
+  Headset: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
+  Building2: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+};
+
 export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -51,10 +67,13 @@ export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: 
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
         className="flex h-screen shrink-0 flex-col border-r border-line bg-white"
       >
-        <div className="flex h-12 items-center gap-2 border-b border-line px-3">
+        <div
+          className="flex h-12 items-center gap-2 border-b border-line px-3"
+          style={{ background: "linear-gradient(to bottom, var(--brand-blue-tint), transparent)" }}
+        >
           <BrandMark size={22} />
           {!collapsed && (
-            <span className="truncate text-sm font-semibold text-ink">{BRAND.productName}</span>
+            <span className="truncate font-display text-sm font-semibold text-ink">{BRAND.productName}</span>
           )}
         </div>
 
@@ -62,24 +81,30 @@ export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: 
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = ICON_MAP[item.icon];
+            const colors = ICON_COLOR[item.icon];
             const link = (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "relative mx-2 mb-0.5 flex h-8 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors",
-                  active ? "bg-brand-blue-tint text-brand-blue font-medium" : "text-muted hover:bg-canvas hover:text-ink",
+                  "group relative mx-2 mb-0.5 flex h-8 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors",
+                  active ? cn(colors.active, "font-medium") : "text-muted hover:bg-canvas hover:text-ink",
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-md ring-1 ring-brand-blue-tint-2"
+                    className="absolute inset-0 rounded-md ring-1 ring-current/15"
                     transition={{ duration: 0.18 }}
                   />
                 )}
-                <Icon className="h-4 w-4 shrink-0 relative" />
+                <Icon
+                  className={cn(
+                    "relative h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110",
+                    !active && colors.icon,
+                  )}
+                />
                 {!collapsed && <span className="relative truncate">{item.label}</span>}
               </Link>
             );
