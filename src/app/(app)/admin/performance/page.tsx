@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { redirect } from "next/navigation";
+import { PhoneOutgoing, PhoneIncoming, Trophy, Percent } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FunnelChart } from "@/components/charts/funnel-chart";
+import { StatTile } from "@/components/ui/stat-tile";
 
 export default async function PerformancePage() {
   const profile = await requireProfile();
@@ -60,30 +62,10 @@ export default async function PerformancePage() {
   return (
     <div className="p-4">
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{totals.calls}</div>
-            <div className="text-xs text-muted">Calls attempted — 7d</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{totals.connects}</div>
-            <div className="text-xs text-muted">Connects — 7d</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-brand-green-text">{totals.conversions}</div>
-            <div className="text-xs text-muted">Conversions — 7d</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{contactRate}</div>
-            <div className="text-xs text-muted">Contact rate — 7d</div>
-          </CardContent>
-        </Card>
+        <StatTile className="stagger-1" icon={PhoneOutgoing} value={totals.calls} label="Calls attempted — 7d" accent="blue" />
+        <StatTile className="stagger-2" icon={PhoneIncoming} value={totals.connects} label="Connects — 7d" accent="orange" />
+        <StatTile className="stagger-3" icon={Trophy} value={totals.conversions} label="Conversions — 7d" accent="green" />
+        <StatTile className="stagger-4" icon={Percent} value={contactRate} label="Contact rate — 7d" accent="blue" />
       </div>
 
       <Card className="mb-4 animate-slide-up">

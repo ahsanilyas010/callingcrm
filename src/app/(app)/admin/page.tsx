@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
-import { Activity, Radio } from "lucide-react";
+import { Activity, Radio, UserCheck, PhoneCall, Coffee, MoonStar, PhoneOutgoing, PhoneIncoming, Trophy, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatTile } from "@/components/ui/stat-tile";
 
 // Aux states (00000000000014_attendance_schema.sql) grouped into the four
 // tiles below — a per-state tile each would be too many for a glance-able
@@ -95,58 +96,18 @@ export default async function LiveFloorPage() {
 
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Right now</p>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-brand-green-text">{auxCounts.available}</div>
-            <div className="text-xs text-muted">Available</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{auxCounts.on_call}</div>
-            <div className="text-xs text-muted">On call / wrap-up</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-warning">{auxCounts.break}</div>
-            <div className="text-xs text-muted">On break</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-muted">{auxCounts.away}</div>
-            <div className="text-xs text-muted">Idle / offline</div>
-          </CardContent>
-        </Card>
+        <StatTile className="stagger-1" icon={UserCheck} value={auxCounts.available} label="Available" accent="green" />
+        <StatTile className="stagger-2" icon={PhoneCall} value={auxCounts.on_call} label="On call / wrap-up" accent="blue" />
+        <StatTile className="stagger-3" icon={Coffee} value={auxCounts.break} label="On break" accent="orange" />
+        <StatTile className="stagger-4" icon={MoonStar} value={auxCounts.away} label="Idle / offline" accent="blue" />
       </div>
 
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Today so far</p>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{callsToday.calls}</div>
-            <div className="text-xs text-muted">Calls attempted</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{callsToday.connects}</div>
-            <div className="text-xs text-muted">Connects</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-brand-green-text">{callsToday.conversions}</div>
-            <div className="text-xs text-muted">Conversions</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{contactRateToday}</div>
-            <div className="text-xs text-muted">Contact rate</div>
-          </CardContent>
-        </Card>
+        <StatTile className="stagger-1" icon={PhoneOutgoing} value={callsToday.calls} label="Calls attempted" accent="blue" />
+        <StatTile className="stagger-2" icon={PhoneIncoming} value={callsToday.connects} label="Connects" accent="orange" />
+        <StatTile className="stagger-3" icon={Trophy} value={callsToday.conversions} label="Conversions" accent="green" />
+        <StatTile className="stagger-4" icon={Percent} value={contactRateToday} label="Contact rate" accent="blue" />
       </div>
 
       {(campaigns ?? []).length === 0 ? (
@@ -165,7 +126,7 @@ export default async function LiveFloorPage() {
               c as unknown as { campaign_assignments: { user_id: string }[] }
             ).campaign_assignments.length;
             return (
-              <Card key={c.id} className="animate-slide-up">
+              <Card key={c.id} className="hover-lift animate-slide-up">
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                   <div>
                     <CardTitle>{c.name}</CardTitle>

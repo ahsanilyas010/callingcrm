@@ -1,4 +1,4 @@
-import { Building2, Download, ShieldCheck, Clock } from "lucide-react";
+import { Building2, Download, ShieldCheck, Clock, Users, PhoneCall, CheckCircle2, TrendingUp } from "lucide-react";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +8,7 @@ import { loadClientFullVisibility } from "@/lib/reports/client-full-visibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatTile } from "@/components/ui/stat-tile";
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import { DailyActivityChart } from "@/components/charts/daily-activity-chart";
 import { ClientSelector } from "./client-selector";
@@ -115,30 +116,10 @@ export default async function ClientReportsPage({
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{totals.loaded}</div>
-            <div className="text-xs text-muted">Leads loaded</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{totals.contacted}</div>
-            <div className="text-xs text-muted">Contacted</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-brand-green-text">{totals.converted}</div>
-            <div className="text-xs text-muted">Converted</div>
-          </CardContent>
-        </Card>
-        <Card className="animate-slide-up">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-semibold tabular text-ink">{conversionRate}</div>
-            <div className="text-xs text-muted">Conversion rate</div>
-          </CardContent>
-        </Card>
+        <StatTile className="stagger-1" icon={Users} value={totals.loaded} label="Leads loaded" accent="blue" />
+        <StatTile className="stagger-2" icon={PhoneCall} value={totals.contacted} label="Contacted" accent="orange" />
+        <StatTile className="stagger-3" icon={CheckCircle2} value={totals.converted} label="Converted" accent="green" />
+        <StatTile className="stagger-4" icon={TrendingUp} value={conversionRate} label="Conversion rate" accent="blue" />
       </div>
 
       <Card className="mb-4 animate-slide-up">
