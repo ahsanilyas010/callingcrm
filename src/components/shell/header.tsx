@@ -78,9 +78,9 @@ const TITLES: Record<string, string> = {
   security: "Security & audit",
   client: "Client reports",
   qa: "QA queue",
-  ops: "Demo dashboard",
+  ops: "Live floor",
   agent: "Demo — Agent view",
-  "client-view": "Demo — Client view",
+  "client-view": "Client reports",
 };
 
 function useTitle() {
