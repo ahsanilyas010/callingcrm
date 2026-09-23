@@ -27,9 +27,23 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getUser() can throw "Invalid Refresh Token: Already Used" rather than
+  // just returning an error — Supabase rotates the refresh token on every
+  // use, and two requests racing to refresh the same expired session (two
+  // tabs, or a flaky/high-latency mobile network retrying a request) means
+  // the loser's token has already been consumed. Uncaught, that crashed
+  // this middleware outright — which every single request goes through —
+  // so the user got stuck unable to reach even the login page, not just
+  // logged out. Treat any auth error here the same as "no session": fall
+  // through to the normal not-logged-in redirect instead of 500ing.
+  let user = null;
+  try {
+    ({
+      data: { user },
+    } = await supabase.auth.getUser());
+  } catch {
+    user = null;
+  }
 
   const isPublic = PUBLIC_PATHS.some((p) =>
     request.nextUrl.pathname.startsWith(p),
