@@ -37,7 +37,11 @@ const ROLES = [
   { value: "ops_manager", label: "Ops manager" },
   { value: "super_admin", label: "Super admin" },
   { value: "client_viewer", label: "Client viewer" },
+  { value: "demo_ops", label: "Demo — Ops view (sample data + real campaigns)" },
+  { value: "demo_agent", label: "Demo — Agent/Client view (sample data only)" },
 ];
+
+const DEMO_ROLES = ["demo_ops", "demo_agent"];
 
 // A free-text timezone field once let someone type "UK" instead of
 // "Europe/London" — an invalid IANA zone that crashes the header's clock
@@ -162,7 +166,7 @@ export function CreateUserDialog({
                     <input type="hidden" name="timezone" value={timezone} />
                   </div>
                 </div>
-                {role !== "client_viewer" && (
+                {role !== "client_viewer" && !DEMO_ROLES.includes(role) && (
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="team_id">Team</Label>
                     <Select value={teamId} onValueChange={setTeamId}>

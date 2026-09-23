@@ -48,6 +48,12 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/client", label: "Reports", icon: "Building2", roles: ["client_viewer"] },
   { href: "/qa", label: "QA queue", icon: "ShieldCheck", roles: ["qa"] },
   ...ADMIN_NAV,
+  // Demo-only accounts for sales/investor walkthroughs — real campaigns
+  // for credibility (demo_ops), everything else fabricated. See
+  // supabase/migrations/00000000000036_demo_roles.sql.
+  { href: "/demo/ops", label: "Demo dashboard", icon: "BarChart3", roles: ["demo_ops"] },
+  { href: "/demo/agent", label: "Demo — Agent view", icon: "Headset", roles: ["demo_agent"] },
+  { href: "/demo/client-view", label: "Demo — Client view", icon: "Building2", roles: ["demo_agent"] },
 ];
 
 export function navFor(role: AppRole): NavItem[] {
@@ -62,6 +68,10 @@ export function homeFor(role: AppRole): string {
       return "/client";
     case "qa":
       return "/qa";
+    case "demo_ops":
+      return "/demo/ops";
+    case "demo_agent":
+      return "/demo/agent";
     default:
       return "/admin";
   }

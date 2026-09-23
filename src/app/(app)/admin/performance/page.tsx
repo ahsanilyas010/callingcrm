@@ -28,6 +28,7 @@ export default async function PerformancePage() {
     { agentId: string; calls: number; connects: number; conversions: number; talkSeconds: number }
   >();
   for (const row of scorecardRows ?? []) {
+    if (!row.agent_id) continue;
     const existing = agentTotals.get(row.agent_id) ?? {
       agentId: row.agent_id,
       calls: 0,

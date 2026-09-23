@@ -30,6 +30,8 @@ const ROLE_LABEL: Record<string, string> = {
   qa: "QA",
   agent: "Agent",
   client_viewer: "Client",
+  demo_ops: "Demo — Ops view",
+  demo_agent: "Demo — Agent/Client view",
 };
 
 // profile.timezone is a free-text field (see admin/people/create-user-dialog)
@@ -76,6 +78,9 @@ const TITLES: Record<string, string> = {
   security: "Security & audit",
   client: "Client reports",
   qa: "QA queue",
+  ops: "Demo dashboard",
+  agent: "Demo — Agent view",
+  "client-view": "Demo — Client view",
 };
 
 function useTitle() {

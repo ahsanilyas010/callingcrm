@@ -13,6 +13,8 @@ const ROLE_LABEL: Record<string, string> = {
   qa: "QA",
   agent: "Agent",
   client_viewer: "Client",
+  demo_ops: "Demo — Ops",
+  demo_agent: "Demo — Agent/Client",
 };
 
 export default async function PeoplePage() {
