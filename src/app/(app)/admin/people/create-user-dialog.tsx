@@ -37,7 +37,7 @@ const ROLES = [
   { value: "ops_manager", label: "Ops manager" },
   { value: "super_admin", label: "Super admin" },
   { value: "client_viewer", label: "Client viewer" },
-  { value: "demo_ops", label: "Demo — Ops view (sample data + real campaigns)" },
+  { value: "demo_ops", label: "Demo — Ops view (sample data only)" },
   { value: "demo_agent", label: "Demo — Agent/Client view (sample data only)" },
 ];
 

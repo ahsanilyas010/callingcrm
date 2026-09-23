@@ -48,8 +48,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/client", label: "Reports", icon: "Building2", roles: ["client_viewer"] },
   { href: "/qa", label: "QA queue", icon: "ShieldCheck", roles: ["qa"] },
   ...ADMIN_NAV,
-  // Demo-only accounts for sales/investor walkthroughs — real campaigns
-  // for credibility (demo_ops), everything else fabricated. See
+  // Demo-only accounts for sales/investor walkthroughs — every number,
+  // name, and campaign shown to either role is fabricated. See
   // supabase/migrations/00000000000036_demo_roles.sql.
   { href: "/demo/ops", label: "Demo dashboard", icon: "BarChart3", roles: ["demo_ops"] },
   { href: "/demo/agent", label: "Demo — Agent view", icon: "Headset", roles: ["demo_agent"] },
