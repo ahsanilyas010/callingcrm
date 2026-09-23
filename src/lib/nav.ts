@@ -49,9 +49,18 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/qa", label: "QA queue", icon: "ShieldCheck", roles: ["qa"] },
   ...ADMIN_NAV,
   // Demo-only accounts for sales/investor walkthroughs — every number,
-  // name, and campaign shown to either role is fabricated. See
-  // supabase/migrations/00000000000036_demo_roles.sql.
-  { href: "/demo/ops", label: "Demo dashboard", icon: "BarChart3", roles: ["demo_ops"] },
+  // name, and campaign shown to either role is fabricated. demo_ops
+  // mirrors the full ops_manager tab set (minus Security & audit) so a
+  // walkthrough can click through every real section, just with sample
+  // data throughout. See supabase/migrations/00000000000036_demo_roles.sql.
+  { href: "/demo/ops", label: "Live floor", icon: "Activity", roles: ["demo_ops"] },
+  { href: "/demo/ops/performance", label: "Performance", icon: "BarChart3", roles: ["demo_ops"] },
+  { href: "/demo/ops/people", label: "People", icon: "Users", roles: ["demo_ops"] },
+  { href: "/demo/ops/campaigns", label: "Campaigns", icon: "Megaphone", roles: ["demo_ops"] },
+  { href: "/demo/ops/attendance", label: "Attendance", icon: "CalendarCheck", roles: ["demo_ops"] },
+  { href: "/demo/ops/compliance", label: "Compliance", icon: "ShieldCheck", roles: ["demo_ops"] },
+  { href: "/demo/ops/data", label: "Data", icon: "Database", roles: ["demo_ops"] },
+  { href: "/demo/client-view", label: "Client reports", icon: "Building2", roles: ["demo_ops"] },
   { href: "/demo/agent", label: "Demo — Agent view", icon: "Headset", roles: ["demo_agent"] },
   { href: "/demo/client-view", label: "Demo — Client view", icon: "Building2", roles: ["demo_agent"] },
 ];

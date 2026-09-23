@@ -43,7 +43,7 @@ const CALLS_PER_DAY = Array.from({ length: 14 }, (_, i) => ({
 
 export default async function DemoClientViewPage() {
   const profile = await requireProfile();
-  if (profile.role !== "demo_agent") redirect("/");
+  if (!["demo_ops", "demo_agent"].includes(profile.role)) redirect("/");
 
   return (
     <div className="p-4">
