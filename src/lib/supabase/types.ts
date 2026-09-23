@@ -1085,6 +1085,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_batches_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
+          },
+          {
             foreignKeyName: "lead_batches_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
@@ -1257,6 +1264,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "data_sources"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
           },
         ]
       }
@@ -1516,6 +1530,27 @@ export type Database = {
           },
         ]
       }
+      rate_limit_hits: {
+        Row: {
+          bucket: string
+          hit_count: number
+          identifier: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hit_count?: number
+          identifier: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hit_count?: number
+          identifier?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       shift_assignments: {
         Row: {
           created_at: string
@@ -1683,6 +1718,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "data_sources"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_fetch_runs_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
           },
           {
             foreignKeyName: "source_fetch_runs_triggered_by_fkey"
@@ -1994,6 +2036,57 @@ export type Database = {
       }
     }
     Views: {
+      mv_agent_scorecard_daily: {
+        Row: {
+          agent_id: string | null
+          avg_talk_seconds: number | null
+          avg_wrap_seconds: number | null
+          calls_attempted: number | null
+          campaign_id: string | null
+          connects: number | null
+          conversions: number | null
+          day: string | null
+          talk_seconds: number | null
+          unique_leads_touched: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_attempts_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_attempts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_campaign_funnel: {
+        Row: {
+          campaign_id: string | null
+          contacted: number | null
+          converted: number | null
+          dialable: number | null
+          loaded: number | null
+          qualified: number | null
+          screened_passed: number | null
+          worked: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_dialable_leads: {
         Row: {
           address_line1: string | null
@@ -2074,26 +2167,12 @@ export type Database = {
             referencedRelation: "data_sources"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      v_campaign_funnel: {
-        Row: {
-          campaign_id: string | null
-          contacted: number | null
-          converted: number | null
-          dialable: number | null
-          loaded: number | null
-          qualified: number | null
-          screened_passed: number | null
-          worked: number | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "leads_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "leads_data_source_id_fkey"
+            columns: ["data_source_id"]
             isOneToOne: false
-            referencedRelation: "campaigns"
-            referencedColumns: ["id"]
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
           },
         ]
       }
@@ -2103,10 +2182,10 @@ export type Database = {
           converted: number | null
           data_source_id: string | null
           fetch_run_count: number | null
+          is_active: boolean | null
           last_fetched_at: string | null
           lawful_basis: string | null
           leads_loaded: number | null
-          is_active: boolean | null
           market: string | null
           name: string | null
           qualified: number | null
@@ -2124,25 +2203,29 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       check_rate_limit: {
-        Args: { p_bucket: string; p_identifier: string; p_max_hits: number; p_window_seconds: number }
+        Args: {
+          p_bucket: string
+          p_identifier: string
+          p_max_hits: number
+          p_window_seconds: number
+        }
         Returns: boolean
       }
       clock_in: { Args: { p_device?: string; p_ip?: unknown }; Returns: string }
       clock_out: { Args: { p_ip?: unknown }; Returns: string }
+      ensure_client_agent_labels: {
+        Args: { p_agent_ids: string[]; p_client_id: string }
+        Returns: undefined
+      }
       get_agent_scorecard: {
         Args: { p_campaign_id?: string; p_from: string; p_to: string }
-        Returns: {
-          agent_id: string
-          avg_talk_seconds: number
-          avg_wrap_seconds: number
-          calls_attempted: number
-          campaign_id: string
-          connects: number
-          conversions: number
-          day: string
-          talk_seconds: number
-          unique_leads_touched: number
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["agent_scorecard_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "agent_scorecard_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_client_agent_activity: {
         Args: { p_client_id?: string; p_from?: string; p_to?: string }
@@ -2154,100 +2237,55 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_client_dispositions: {
-        Args: { p_client_id?: string }
-        Returns: {
-          attempts: number
-          campaign_code: string
-          campaign_id: string
-          campaign_name: string
-          category: string
-          disposition_code: string
-          disposition_label: string
-        }[]
-      }
-      get_client_funnel: {
-        Args: { p_client_id?: string }
-        Returns: {
-          campaign_code: string
-          campaign_id: string
-          campaign_name: string
-          contacted: number
-          converted: number
-          dialable: number
-          loaded: number
-          market: string | null
-          qualified: number
-        }[]
-      }
-      get_client_leads: {
-        Args: { p_client_id?: string }
-        Returns: {
-          id: string
-          campaign_id: string
-          campaign_name: string
-          campaign_code: string
-          first_name: string | null
-          last_name: string | null
-          company_name: string | null
-          job_title: string | null
-          phone_e164: string
-          email: string | null
-          address_line1: string | null
-          city: string | null
-          region: string | null
-          postcode: string | null
-          status: string
-          screening_status: string
-          do_not_call: boolean
-          assigned_agent_label: string | null
-          attempt_count: number
-          custom: Json
-          created_at: string
-        }[]
-      }
       get_client_call_log: {
         Args: { p_client_id?: string }
-        Returns: {
-          id: string
-          lead_id: string
-          campaign_id: string
-          campaign_code: string
-          first_name: string | null
-          last_name: string | null
-          company_name: string | null
-          phone_e164: string
-          agent_label: string | null
-          attempt_no: number
-          disposition_code: string | null
-          disposition_label: string | null
-          category: string | null
-          started_at: string
-          ended_at: string | null
-          talk_seconds: number | null
-          wrap_seconds: number | null
-          notes: string | null
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["client_call_log_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_call_log_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_client_dispositions: {
+        Args: { p_client_id?: string }
+        Returns: Database["public"]["CompositeTypes"]["client_disposition_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_disposition_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_client_followups: {
         Args: { p_client_id?: string }
-        Returns: {
-          id: string
-          lead_id: string
-          campaign_id: string
-          campaign_code: string
-          first_name: string | null
-          last_name: string | null
-          company_name: string | null
-          phone_e164: string
-          agent_label: string | null
-          followup_type: string
-          due_at: string
-          note: string | null
-          priority: string
-          status: string
-          snooze_count: number
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["client_followup_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_followup_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_client_funnel: {
+        Args: { p_client_id?: string }
+        Returns: Database["public"]["CompositeTypes"]["client_funnel_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_funnel_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_client_leads: {
+        Args: { p_client_id?: string }
+        Returns: Database["public"]["CompositeTypes"]["client_lead_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_lead_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       is_manager: { Args: never; Returns: boolean }
       my_team_id: { Args: never; Returns: string }
@@ -2270,6 +2308,7 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_agent_scorecard: { Args: never; Returns: undefined }
       set_aux_state: {
         Args: {
           p_reason?: string
@@ -2306,6 +2345,8 @@ export type Database = {
         }
       }
       sweep_followups: { Args: never; Returns: undefined }
+      sweep_rate_limit_hits: { Args: never; Returns: undefined }
+      sweep_screening_expiry: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -2315,6 +2356,8 @@ export type Database = {
         | "qa"
         | "agent"
         | "client_viewer"
+        | "demo_ops"
+        | "demo_agent"
       attendance_status:
         | "present"
         | "late"
@@ -2374,15 +2417,15 @@ export type Database = {
     CompositeTypes: {
       agent_scorecard_row: {
         agent_id: string | null
-        avg_talk_seconds: number | null
-        avg_wrap_seconds: number | null
-        calls_attempted: number | null
         campaign_id: string | null
+        day: string | null
+        calls_attempted: number | null
+        unique_leads_touched: number | null
         connects: number | null
         conversions: number | null
-        day: string | null
         talk_seconds: number | null
-        unique_leads_touched: number | null
+        avg_talk_seconds: number | null
+        avg_wrap_seconds: number | null
       }
       client_agent_activity_row: {
         day: string | null
@@ -2394,25 +2437,85 @@ export type Database = {
         attendance_minutes: number | null
         productive_minutes: number | null
       }
-      client_disposition_row: {
-        attempts: number | null
-        campaign_code: string | null
+      client_call_log_row: {
+        id: string | null
+        lead_id: string | null
         campaign_id: string | null
-        campaign_name: string | null
-        category: string | null
+        campaign_code: string | null
+        first_name: string | null
+        last_name: string | null
+        company_name: string | null
+        phone_e164: string | null
+        agent_label: string | null
+        attempt_no: number | null
         disposition_code: string | null
         disposition_label: string | null
+        category: string | null
+        started_at: string | null
+        ended_at: string | null
+        talk_seconds: number | null
+        wrap_seconds: number | null
+        notes: string | null
       }
-      client_funnel_row: {
-        campaign_code: string | null
+      client_disposition_row: {
         campaign_id: string | null
         campaign_name: string | null
-        contacted: number | null
-        converted: number | null
-        dialable: number | null
-        loaded: number | null
+        campaign_code: string | null
+        disposition_code: string | null
+        disposition_label: string | null
+        category: string | null
+        attempts: number | null
+      }
+      client_followup_row: {
+        id: string | null
+        lead_id: string | null
+        campaign_id: string | null
+        campaign_code: string | null
+        first_name: string | null
+        last_name: string | null
+        company_name: string | null
+        phone_e164: string | null
+        agent_label: string | null
+        followup_type: string | null
+        due_at: string | null
+        note: string | null
+        priority: string | null
+        status: string | null
+        snooze_count: number | null
+      }
+      client_funnel_row: {
+        campaign_id: string | null
+        campaign_name: string | null
+        campaign_code: string | null
         market: string | null
+        loaded: number | null
+        dialable: number | null
+        contacted: number | null
         qualified: number | null
+        converted: number | null
+      }
+      client_lead_row: {
+        id: string | null
+        campaign_id: string | null
+        campaign_name: string | null
+        campaign_code: string | null
+        first_name: string | null
+        last_name: string | null
+        company_name: string | null
+        job_title: string | null
+        phone_e164: string | null
+        email: string | null
+        address_line1: string | null
+        city: string | null
+        region: string | null
+        postcode: string | null
+        status: string | null
+        screening_status: string | null
+        do_not_call: boolean | null
+        assigned_agent_label: string | null
+        attempt_count: number | null
+        custom: Json | null
+        created_at: string | null
       }
     }
   }
@@ -2426,12 +2529,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2455,11 +2558,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2480,11 +2583,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2505,11 +2608,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2522,11 +2625,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2545,6 +2648,8 @@ export const Constants = {
         "qa",
         "agent",
         "client_viewer",
+        "demo_ops",
+        "demo_agent",
       ],
       attendance_status: [
         "present",
