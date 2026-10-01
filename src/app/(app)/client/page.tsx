@@ -5,7 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { loadClientFunnel } from "@/lib/reports/client-funnel";
 import { loadClientAgentActivity } from "@/lib/reports/client-activity";
 import { loadClientFullVisibility } from "@/lib/reports/client-full-visibility";
-import { loadClientAppointmentStats } from "@/lib/reports/client-appointments";
+import { loadClientAppointmentStats, loadClientAppointmentDaily } from "@/lib/reports/client-appointments";
+import { DailyBreakdownCard } from "@/components/reports/daily-breakdown-card";
+
+const APPOINTMENT_DAILY_COLUMNS = [
+  { key: "booked", label: "Booked" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "completed", label: "Completed" },
+  { key: "follow_up", label: "Follow-up" },
+];
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,13 +61,14 @@ export default async function ClientReportsPage({
   const { client: clientIdParam } = await searchParams;
 
   const supabase = await createClient();
-  const [outcome, activityOutcome, { data: clients }, appointmentStats] = await Promise.all([
+  const [outcome, activityOutcome, { data: clients }, appointmentStats, appointmentDaily] = await Promise.all([
     loadClientFunnel(isManager ? (clientIdParam ?? null) : null),
     loadClientAgentActivity(isManager ? (clientIdParam ?? null) : null, 30),
     isManager
       ? supabase.from("clients").select("id, name").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string }[] }),
     loadClientAppointmentStats(isManager ? (clientIdParam ?? null) : null),
+    loadClientAppointmentDaily(isManager ? (clientIdParam ?? null) : null, 14),
   ]);
 
   if (!outcome.ok) {
@@ -130,6 +139,8 @@ export default async function ClientReportsPage({
         <StatTile className="stagger-3" icon={CheckCircle2} value={appointmentStats.completed} label="Meetings completed" accent="green" />
         <StatTile className="stagger-4" icon={Clock3} value={appointmentStats.followUp} label="Follow-up required" accent="orange" />
       </div>
+
+      <DailyBreakdownCard title="Appointments by day" rows={appointmentDaily} columns={APPOINTMENT_DAILY_COLUMNS} />
 
       <Card className="mb-4 animate-slide-up">
         <CardHeader>

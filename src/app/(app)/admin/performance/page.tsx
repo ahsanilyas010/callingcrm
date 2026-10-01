@@ -5,6 +5,33 @@ import { PhoneOutgoing, PhoneIncoming, Trophy, Percent, CalendarCheck, CalendarC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import { StatTile } from "@/components/ui/stat-tile";
+import { DailyBreakdownCard, type DailyBreakdownRow } from "@/components/reports/daily-breakdown-card";
+
+const APPOINTMENT_DAILY_COLUMNS = [
+  { key: "booked", label: "Booked" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "completed", label: "Completed" },
+  { key: "follow_up", label: "Follow-up" },
+];
+
+const CALL_DAILY_COLUMNS = [
+  { key: "attempted", label: "Attempted" },
+  { key: "connects", label: "Connects" },
+];
+
+// Builds one row per day in [from, to] (inclusive), even days with zero
+// activity, so the chart's x-axis doesn't silently skip gaps.
+function dailyRows(from: string, to: string, counters: Record<string, Record<string, number>>): DailyBreakdownRow[] {
+  const rows: DailyBreakdownRow[] = [];
+  const cursor = new Date(`${from}T00:00:00.000Z`);
+  const end = new Date(`${to}T00:00:00.000Z`);
+  while (cursor <= end) {
+    const day = cursor.toISOString().slice(0, 10);
+    rows.push({ day, ...(counters[day] ?? {}) });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return rows;
+}
 
 export default async function PerformancePage() {
   const profile = await requireProfile();
@@ -15,12 +42,15 @@ export default async function PerformancePage() {
   const to = new Date().toISOString().slice(0, 10);
   const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [{ data: funnel }, { data: scorecardRows }, { data: campaigns }, { data: appointmentRows }] = await Promise.all([
-    supabase.from("v_campaign_funnel").select("*, campaigns(name, code)"),
-    supabase.rpc("get_agent_scorecard", { p_from: from, p_to: to }),
-    supabase.from("campaigns").select("id, name, code"),
-    supabase.from("appointments").select("status").gte("created_at", `${from}T00:00:00.000Z`),
-  ]);
+  const [{ data: funnel }, { data: scorecardRows }, { data: campaigns }, { data: appointmentRows }, { data: callRows }, { data: dispositions }] =
+    await Promise.all([
+      supabase.from("v_campaign_funnel").select("*, campaigns(name, code)"),
+      supabase.rpc("get_agent_scorecard", { p_from: from, p_to: to }),
+      supabase.from("campaigns").select("id, name, code"),
+      supabase.from("appointments").select("status, created_at").gte("created_at", `${from}T00:00:00.000Z`),
+      supabase.from("call_attempts").select("started_at, disposition_id").gte("started_at", `${from}T00:00:00.000Z`),
+      supabase.from("dispositions").select("id, category"),
+    ]);
 
   const appointmentCounts = {
     booked: (appointmentRows ?? []).filter((a) => a.status === "pending" || a.status === "confirmed").length,
@@ -28,6 +58,28 @@ export default async function PerformancePage() {
     completed: (appointmentRows ?? []).filter((a) => a.status === "completed").length,
     followUp: (appointmentRows ?? []).filter((a) => a.status === "follow_up").length,
   };
+
+  const appointmentDailyCounters: Record<string, Record<string, number>> = {};
+  for (const a of appointmentRows ?? []) {
+    const day = a.created_at.slice(0, 10);
+    const bucket = (appointmentDailyCounters[day] ??= { booked: 0, confirmed: 0, completed: 0, follow_up: 0 });
+    if (a.status === "pending" || a.status === "confirmed") bucket.booked++;
+    if (a.status === "confirmed") bucket.confirmed++;
+    if (a.status === "completed") bucket.completed++;
+    if (a.status === "follow_up") bucket.follow_up++;
+  }
+  const appointmentDaily = dailyRows(from, to, appointmentDailyCounters);
+
+  const categoryById = new Map((dispositions ?? []).map((d) => [d.id, d.category]));
+  const callDailyCounters: Record<string, Record<string, number>> = {};
+  for (const c of callRows ?? []) {
+    const day = c.started_at.slice(0, 10);
+    const bucket = (callDailyCounters[day] ??= { attempted: 0, connects: 0 });
+    bucket.attempted++;
+    const category = c.disposition_id ? categoryById.get(c.disposition_id) : null;
+    if (typeof category === "string" && category.startsWith("connected")) bucket.connects++;
+  }
+  const callDaily = dailyRows(from, to, callDailyCounters);
 
   const campaignNames = new Map((campaigns ?? []).map((c) => [c.id, `${c.name} (${c.code})`]));
 
@@ -83,6 +135,9 @@ export default async function PerformancePage() {
         <StatTile className="stagger-3" icon={CheckCircle2} value={appointmentCounts.completed} label="Completed — 7d" accent="green" />
         <StatTile className="stagger-4" icon={Clock3} value={appointmentCounts.followUp} label="Follow-up required — 7d" accent="orange" />
       </div>
+
+      <DailyBreakdownCard title="Appointments by day — 7d" rows={appointmentDaily} columns={APPOINTMENT_DAILY_COLUMNS} />
+      <DailyBreakdownCard title="Calls by day — 7d" rows={callDaily} columns={CALL_DAILY_COLUMNS} />
 
       <Card className="mb-4 animate-slide-up">
         <CardHeader>
