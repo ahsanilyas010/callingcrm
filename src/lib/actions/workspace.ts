@@ -20,6 +20,7 @@ export interface WorkspaceLead {
   next_action_at: string | null;
   lead_local_time: string | null;
   custom: unknown;
+  lastCall: { dispositionLabel: string; notes: string | null; endedAt: string } | null;
 }
 
 export interface WorkspaceDisposition {
@@ -97,7 +98,32 @@ export async function getNextLead(campaignId: string): Promise<WorkspaceLead | n
     .limit(1)
     .maybeSingle();
 
-  return data as WorkspaceLead | null;
+  if (!data) return null;
+
+  // v_dialable_leads has no call history of its own — a repeat dial (this
+  // agent's own prior attempt, per call_attempts_select RLS) otherwise
+  // surfaces nothing beyond custom's legacy pre-import fields, even though
+  // the agent's own real disposition and notes from last time are sitting
+  // right there in call_attempts.
+  let lastCall: WorkspaceLead["lastCall"] = null;
+  if (data.id && (data.attempt_count ?? 0) > 0) {
+    const { data: attempt } = await supabase
+      .from("call_attempts")
+      .select("notes, ended_at, dispositions(label)")
+      .eq("lead_id", data.id)
+      .order("ended_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (attempt && attempt.ended_at) {
+      lastCall = {
+        dispositionLabel: attempt.dispositions?.label ?? "Unknown",
+        notes: attempt.notes,
+        endedAt: attempt.ended_at,
+      };
+    }
+  }
+
+  return { ...data, lastCall } as WorkspaceLead;
 }
 
 export async function getDispositions(campaignId: string): Promise<WorkspaceDisposition[]> {

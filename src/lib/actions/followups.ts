@@ -17,7 +17,19 @@ export interface FollowupRow {
   priority: string;
   status: string;
   snooze_count: number;
-  leads: { first_name: string | null; last_name: string | null; phone_e164: string } | null;
+  leads: {
+    first_name: string | null;
+    last_name: string | null;
+    phone_e164: string;
+    email: string | null;
+    company_name: string | null;
+    job_title: string | null;
+    address_line1: string | null;
+    city: string | null;
+    region: string | null;
+    postcode: string | null;
+    custom: unknown;
+  } | null;
 }
 
 export async function getMyFollowups(): Promise<FollowupRow[]> {
@@ -29,7 +41,9 @@ export async function getMyFollowups(): Promise<FollowupRow[]> {
 
   const { data } = await supabase
     .from("followups")
-    .select("id, lead_id, followup_type, due_at, note, priority, status, snooze_count, leads(first_name, last_name, phone_e164)")
+    .select(
+      "id, lead_id, followup_type, due_at, note, priority, status, snooze_count, leads(first_name, last_name, phone_e164, email, company_name, job_title, address_line1, city, region, postcode, custom)",
+    )
     .eq("assigned_to", user.id)
     .in("status", ["pending", "snoozed"])
     .order("due_at", { ascending: true })

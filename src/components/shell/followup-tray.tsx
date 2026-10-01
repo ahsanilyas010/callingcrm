@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Bell, Clock, Check, AlarmClock, X } from "lucide-react";
+import { Bell, Clock, Check, AlarmClock, X, Phone, Copy } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getMyFollowups, snoozeFollowup, completeFollowup, cancelFollowup, type FollowupRow } from "@/lib/actions/followups";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
+import { LeadHistoryDialog } from "@/app/(app)/workspace/leads/lead-history-dialog";
 
 export function FollowupTray({ userId, initial }: { userId: string; initial: FollowupRow[] }) {
   const [followups, setFollowups] = useState(initial);
@@ -66,18 +68,42 @@ export function FollowupTray({ userId, initial }: { userId: string; initial: Fol
           )}
           {followups.map((f) => {
             const due = new Date(f.due_at) <= new Date();
+            const leadName =
+              [f.leads?.first_name, f.leads?.last_name].filter(Boolean).join(" ") ||
+              f.leads?.company_name ||
+              f.leads?.phone_e164 ||
+              "This lead";
             return (
               <div key={f.id} className="flex flex-col gap-1.5 border-b border-line px-3 py-2 last:border-0">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-ink">
-                    {[f.leads?.first_name, f.leads?.last_name].filter(Boolean).join(" ") ||
-                      f.leads?.phone_e164}
-                  </span>
+                  <span className="font-medium text-ink">{leadName}</span>
                   <Badge variant={due ? "accent" : "neutral"}>
                     <Clock className="h-2.5 w-2.5" />
                     {new Date(f.due_at).toLocaleString([], { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" })}
                   </Badge>
                 </div>
+                {f.leads?.phone_e164 && (
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`tel:${f.leads.phone_e164.replace(/\s+/g, "")}`}
+                      className="tabular flex items-center gap-1 text-xs text-muted hover:text-brand-blue"
+                    >
+                      <Phone className="h-3 w-3" /> {f.leads.phone_e164}
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(f.leads!.phone_e164);
+                        toast.success("Copied");
+                      }}
+                      aria-label="Copy phone number"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 {f.note && <p className="text-[11px] text-muted">{f.note}</p>}
                 <div className="flex items-center gap-1.5">
                   <Button
@@ -111,19 +137,35 @@ export function FollowupTray({ userId, initial }: { userId: string; initial: Fol
                       <AlarmClock className="h-3 w-3" /> Snooze
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={async () => {
-                      const r = await cancelFollowup(f.id);
-                      if (r.error) toast.error(r.error);
-                      else {
-                        refresh();
-                      }
-                    }}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <div className="ml-auto flex items-center gap-0.5">
+                    <LeadHistoryDialog leadId={f.lead_id} leadName={leadName} />
+                    <LeadDetailsDialog
+                      leadName={leadName}
+                      custom={f.leads?.custom as Record<string, unknown> | null}
+                      contact={{
+                        email: f.leads?.email ?? null,
+                        company_name: f.leads?.company_name ?? null,
+                        job_title: f.leads?.job_title ?? null,
+                        address_line1: f.leads?.address_line1 ?? null,
+                        city: f.leads?.city ?? null,
+                        region: f.leads?.region ?? null,
+                        postcode: f.leads?.postcode ?? null,
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        const r = await cancelFollowup(f.id);
+                        if (r.error) toast.error(r.error);
+                        else {
+                          refresh();
+                        }
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
