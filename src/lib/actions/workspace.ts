@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { notifyCloserOfAppointment } from "@/lib/actions/appointments";
 
 export interface WorkspaceLead {
   id: string;
@@ -137,6 +138,37 @@ export async function submitCallAttempt(params: {
   });
 
   if (error) return { error: error.message };
+
+  // record_call_attempt() creates the appointments row itself (atomically,
+  // alongside the lead/call-attempt writes) but returns only the
+  // call-attempt id, not the appointment id — so find the row it just
+  // created to notify the assigned closer. See the migration's comment for
+  // why the RPC's signature wasn't widened for this.
+  if (params.dispositionCode === "appointment_set") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: appointment } = await supabase
+        .from("appointments")
+        .select("id")
+        .eq("lead_id", params.leadId)
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (appointment) {
+        const notifyResult = await notifyCloserOfAppointment(appointment.id);
+        if (notifyResult.error) {
+          return {
+            ok: true,
+            warning: `Appointment booked, but the closer couldn't be notified by email: ${notifyResult.error}`,
+          };
+        }
+      }
+    }
+  }
 
   if (params.callbackAt) {
     const {

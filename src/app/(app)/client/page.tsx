@@ -1,10 +1,11 @@
-import { Building2, Download, ShieldCheck, Clock, Users, PhoneCall, CheckCircle2, TrendingUp } from "lucide-react";
+import { Building2, Download, ShieldCheck, Clock, Users, PhoneCall, CheckCircle2, TrendingUp, CalendarCheck, Clock3 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { createClient } from "@/lib/supabase/server";
 import { loadClientFunnel } from "@/lib/reports/client-funnel";
 import { loadClientAgentActivity } from "@/lib/reports/client-activity";
 import { loadClientFullVisibility } from "@/lib/reports/client-full-visibility";
+import { loadClientAppointmentStats } from "@/lib/reports/client-appointments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,12 +53,13 @@ export default async function ClientReportsPage({
   const { client: clientIdParam } = await searchParams;
 
   const supabase = await createClient();
-  const [outcome, activityOutcome, { data: clients }] = await Promise.all([
+  const [outcome, activityOutcome, { data: clients }, appointmentStats] = await Promise.all([
     loadClientFunnel(isManager ? (clientIdParam ?? null) : null),
     loadClientAgentActivity(isManager ? (clientIdParam ?? null) : null, 30),
     isManager
       ? supabase.from("clients").select("id, name").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    loadClientAppointmentStats(isManager ? (clientIdParam ?? null) : null),
   ]);
 
   if (!outcome.ok) {
@@ -120,6 +122,13 @@ export default async function ClientReportsPage({
         <StatTile className="stagger-2" icon={PhoneCall} value={totals.contacted} label="Contacted" accent="orange" />
         <StatTile className="stagger-3" icon={CheckCircle2} value={totals.converted} label="Converted" accent="green" />
         <StatTile className="stagger-4" icon={TrendingUp} value={conversionRate} label="Conversion rate" accent="blue" />
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile className="stagger-1" icon={CalendarCheck} value={appointmentStats.booked} label="Appointments booked" accent="blue" />
+        <StatTile className="stagger-2" icon={Clock} value={appointmentStats.confirmed} label="Confirmed" accent="orange" />
+        <StatTile className="stagger-3" icon={CheckCircle2} value={appointmentStats.completed} label="Meetings completed" accent="green" />
+        <StatTile className="stagger-4" icon={Clock3} value={appointmentStats.followUp} label="Follow-up required" accent="orange" />
       </div>
 
       <Card className="mb-4 animate-slide-up">

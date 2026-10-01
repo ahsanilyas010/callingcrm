@@ -19,6 +19,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_status_history: {
+        Row: {
+          appointment_id: string
+          changed_at: string
+          changed_by: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+        }
+        Insert: {
+          appointment_id: string
+          changed_at?: string
+          changed_by: string
+          id?: string
+          note?: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+        }
+        Update: {
+          appointment_id?: string
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_status_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          assigned_closer_id: string | null
+          campaign_id: string
+          created_at: string
+          created_by: string
+          id: string
+          lead_id: string
+          notes: string | null
+          scheduled_at: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_closer_id?: string | null
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_closer_id?: string | null
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_assigned_closer_id_fkey"
+            columns: ["assigned_closer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_sessions: {
         Row: {
           agent_note: string | null
@@ -340,6 +457,39 @@ export type Database = {
           },
           {
             foreignKeyName: "campaign_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_closers: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_closers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_closers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2237,6 +2387,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_client_appointment_stats: {
+        Args: { p_client_id?: string }
+        Returns: Database["public"]["CompositeTypes"]["client_appointment_stats"]
+        SetofOptions: {
+          from: "*"
+          to: "client_appointment_stats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_client_call_log: {
         Args: { p_client_id?: string }
         Returns: Database["public"]["CompositeTypes"]["client_call_log_row"][]
@@ -2347,6 +2507,14 @@ export type Database = {
       sweep_followups: { Args: never; Returns: undefined }
       sweep_rate_limit_hits: { Args: never; Returns: undefined }
       sweep_screening_expiry: { Args: never; Returns: undefined }
+      update_appointment_status: {
+        Args: {
+          p_appointment_id: string
+          p_note?: string
+          p_status: Database["public"]["Enums"]["appointment_status"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
@@ -2358,6 +2526,12 @@ export type Database = {
         | "client_viewer"
         | "demo_ops"
         | "demo_agent"
+      appointment_status:
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "follow_up"
+        | "lost"
       attendance_status:
         | "present"
         | "late"
@@ -2436,6 +2610,12 @@ export type Database = {
         wrap_minutes: number | null
         attendance_minutes: number | null
         productive_minutes: number | null
+      }
+      client_appointment_stats: {
+        booked: number | null
+        confirmed: number | null
+        completed: number | null
+        follow_up: number | null
       }
       client_call_log_row: {
         id: string | null
@@ -2650,6 +2830,13 @@ export const Constants = {
         "client_viewer",
         "demo_ops",
         "demo_agent",
+      ],
+      appointment_status: [
+        "pending",
+        "confirmed",
+        "completed",
+        "follow_up",
+        "lost",
       ],
       attendance_status: [
         "present",

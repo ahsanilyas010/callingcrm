@@ -18,7 +18,8 @@ export type NavIconName =
   | "Database"
   | "Lock"
   | "Headset"
-  | "Building2";
+  | "Building2"
+  | "Handshake";
 
 export interface NavItem {
   href: string;
@@ -33,6 +34,7 @@ export interface NavItem {
 export const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Live floor", icon: "Activity", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/performance", label: "Performance", icon: "BarChart3", roles: ["super_admin", "ops_manager", "team_lead"] },
+  { href: "/admin/appointments", label: "Appointments", icon: "Handshake", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/people", label: "People", icon: "Users", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/campaigns", label: "Campaigns", icon: "Megaphone", roles: ["super_admin", "ops_manager"] },
   { href: "/admin/attendance", label: "Attendance", icon: "CalendarCheck", roles: ["super_admin", "ops_manager", "team_lead"] },
