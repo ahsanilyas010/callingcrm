@@ -49,6 +49,7 @@ export interface LeadTableRow {
   status: string;
   do_not_call: boolean;
   appointment: { status: string; scheduled_at: string | null } | null;
+  lastCall: { dispositionLabel: string; notes: string | null; endedAt: string } | null;
   pipelineStatus: PipelineStatus;
 }
 
@@ -99,7 +100,12 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
           <tbody>
             {visible.map((l) => {
               const custom = (l.custom as Record<string, unknown> | null) ?? {};
-              const { disposition, remarks } = priorContact(l.custom);
+              // A lead's own real call_attempts disposition (if it's ever
+              // actually been dialed through this app) takes priority over
+              // custom's legacy pre-import fields.
+              const legacy = priorContact(l.custom);
+              const disposition = l.lastCall?.dispositionLabel ?? legacy.disposition;
+              const remarks = l.lastCall ? (l.lastCall.notes ?? legacy.remarks) : legacy.remarks;
               const leadName = [l.first_name, l.last_name].filter(Boolean).join(" ") || l.company_name || "—";
               return (
                 <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
