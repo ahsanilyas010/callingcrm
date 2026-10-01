@@ -3,6 +3,7 @@ import { parsePhoneNumberWithError } from "libphonenumber-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import type { NormalisedLead } from "./types";
+import { timezoneForCountry } from "@/lib/leads/timezone";
 
 // Section 6.4 — "Every fetched record routes through the same import
 // pipeline as a CSV upload — validation, then suppression screening, then
@@ -95,6 +96,11 @@ export async function importLeads(params: {
       region: record.region ?? null,
       postcode: record.postcode ?? null,
       country_code: record.countryHint,
+      // v_dialable_leads enforces the campaign's call window against this
+      // lead's own local time — without it, every lead silently falls back
+      // to UTC, which is wrong for every market except one that happens to
+      // sit on UTC, and doesn't track DST even then.
+      lead_timezone: timezoneForCountry(record.countryHint),
       // The verbatim consent text has no dedicated column — it's stored in
       // `custom` alongside the submitting IP, since `consent_evidence_path`
       // is a storage path for uploaded evidence files, not inline text.
