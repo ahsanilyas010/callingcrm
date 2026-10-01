@@ -12,6 +12,7 @@ import { AutoAssignButton } from "./auto-assign-button";
 import { SendEmailButton } from "./send-email-button";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { ManageAgentsDialog } from "./manage-agents-dialog";
+import { ManageClosersDialog } from "./manage-closers-dialog";
 import { ActivateToggle } from "./activate-toggle";
 import { LeadDetailsDialog } from "./lead-details-dialog";
 
@@ -45,6 +46,8 @@ export default async function CampaignDetailPage({
     { data: agents },
     { data: templates },
     { data: agentRoster },
+    { data: closers },
+    { data: closerRoster },
   ] = await Promise.all([
     supabase.from("campaigns").select("*, clients(name)").eq("id", id).single(),
     supabase
@@ -64,6 +67,13 @@ export default async function CampaignDetailPage({
       .or(`campaign_id.is.null,campaign_id.eq.${id}`)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name").eq("role", "agent").eq("is_active", true).order("full_name"),
+    supabase.from("campaign_closers").select("user_id, profiles(full_name)").eq("campaign_id", id),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("role", ["ops_manager", "team_lead", "super_admin"])
+      .eq("is_active", true)
+      .order("full_name"),
   ]);
 
   if (!campaign) notFound();
@@ -73,6 +83,10 @@ export default async function CampaignDetailPage({
     id: a.user_id,
     name: (a as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
     dailyTarget: a.daily_target,
+  }));
+  const assignedClosers = (closers ?? []).map((c) => ({
+    id: c.user_id,
+    name: (c as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—",
   }));
 
   return (
@@ -102,6 +116,7 @@ export default async function CampaignDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <ManageAgentsDialog campaignId={campaign.id} assigned={assignedAgents} roster={agentRoster ?? []} />
+          <ManageClosersDialog campaignId={campaign.id} assigned={assignedClosers} roster={closerRoster ?? []} />
           <ActivateToggle campaignId={campaign.id} isActive={campaign.is_active} />
         </div>
       </div>

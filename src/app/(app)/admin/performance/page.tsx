@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { redirect } from "next/navigation";
-import { PhoneOutgoing, PhoneIncoming, Trophy, Percent } from "lucide-react";
+import { PhoneOutgoing, PhoneIncoming, Trophy, Percent, CalendarCheck, CalendarClock, CheckCircle2, Clock3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -15,11 +15,19 @@ export default async function PerformancePage() {
   const to = new Date().toISOString().slice(0, 10);
   const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [{ data: funnel }, { data: scorecardRows }, { data: campaigns }] = await Promise.all([
+  const [{ data: funnel }, { data: scorecardRows }, { data: campaigns }, { data: appointmentRows }] = await Promise.all([
     supabase.from("v_campaign_funnel").select("*, campaigns(name, code)"),
     supabase.rpc("get_agent_scorecard", { p_from: from, p_to: to }),
     supabase.from("campaigns").select("id, name, code"),
+    supabase.from("appointments").select("status").gte("created_at", `${from}T00:00:00.000Z`),
   ]);
+
+  const appointmentCounts = {
+    booked: (appointmentRows ?? []).filter((a) => a.status === "pending" || a.status === "confirmed").length,
+    confirmed: (appointmentRows ?? []).filter((a) => a.status === "confirmed").length,
+    completed: (appointmentRows ?? []).filter((a) => a.status === "completed").length,
+    followUp: (appointmentRows ?? []).filter((a) => a.status === "follow_up").length,
+  };
 
   const campaignNames = new Map((campaigns ?? []).map((c) => [c.id, `${c.name} (${c.code})`]));
 
@@ -67,6 +75,13 @@ export default async function PerformancePage() {
         <StatTile className="stagger-2" icon={PhoneIncoming} value={totals.connects} label="Connects — 7d" accent="orange" />
         <StatTile className="stagger-3" icon={Trophy} value={totals.conversions} label="Conversions — 7d" accent="green" />
         <StatTile className="stagger-4" icon={Percent} value={contactRate} label="Contact rate — 7d" accent="blue" />
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile className="stagger-1" icon={CalendarCheck} value={appointmentCounts.booked} label="Appointments booked — 7d" accent="blue" />
+        <StatTile className="stagger-2" icon={CalendarClock} value={appointmentCounts.confirmed} label="Confirmed — 7d" accent="orange" />
+        <StatTile className="stagger-3" icon={CheckCircle2} value={appointmentCounts.completed} label="Completed — 7d" accent="green" />
+        <StatTile className="stagger-4" icon={Clock3} value={appointmentCounts.followUp} label="Follow-up required — 7d" accent="orange" />
       </div>
 
       <Card className="mb-4 animate-slide-up">

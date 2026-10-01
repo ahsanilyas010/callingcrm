@@ -17,6 +17,7 @@ import {
   Lock,
   Headset,
   Building2,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const ICON_MAP: Record<NavIconName, LucideIcon> = {
   Lock,
   Headset,
   Building2,
+  Handshake,
 };
 
 // Per-icon (not per-position) colour so a given section always gets the
@@ -54,6 +56,7 @@ const ICON_COLOR: Record<NavIconName, { icon: string; active: string }> = {
   Lock: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
   Headset: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
   Building2: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+  Handshake: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
 };
 
 export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
