@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { parsePhoneNumberWithError } from "libphonenumber-js";
 import { createClient } from "@/lib/supabase/server";
+import { timezoneForCountry } from "@/lib/leads/timezone";
 
 export interface ActionResult {
   error?: string;
@@ -93,6 +94,7 @@ export async function createManualLead(
     city,
     region,
     country_code: countryHint,
+    lead_timezone: timezoneForCountry(countryHint),
     status: suppressed ? "suppressed" : "new",
     screening_status: suppressed ? "blocked" : "unscreened",
     do_not_call: Boolean(suppressed),
