@@ -15,3 +15,19 @@ export function timezoneForCountry(countryCode: string | null | undefined): stri
   if (!countryCode) return "UTC";
   return COUNTRY_TIMEZONE[countryCode.toUpperCase()] ?? "UTC";
 }
+
+// v_dialable_leads' lead_local_time is a plain Postgres `time` column
+// ("14:35:22" or "14:35:22.123456") — not a timestamp — so `new Date(...)`
+// on it directly is not a spec-valid date-time string and silently returns
+// "Invalid Date" in the browser. Format the HH:MM straight from the string
+// instead of round-tripping through Date parsing.
+export function formatPgTime(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hour24 = Number(match[1]);
+  const minute = match[2];
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+  return `${hour12}:${minute} ${period}`;
+}

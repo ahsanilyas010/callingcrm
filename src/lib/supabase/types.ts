@@ -2387,6 +2387,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_client_appointment_daily: {
+        Args: { p_client_id?: string; p_days?: number }
+        Returns: Database["public"]["CompositeTypes"]["client_appointment_daily_row"][]
+        SetofOptions: {
+          from: "*"
+          to: "client_appointment_daily_row"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_client_appointment_stats: {
         Args: { p_client_id?: string }
         Returns: Database["public"]["CompositeTypes"]["client_appointment_stats"]
@@ -2610,6 +2620,13 @@ export type Database = {
         wrap_minutes: number | null
         attendance_minutes: number | null
         productive_minutes: number | null
+      }
+      client_appointment_daily_row: {
+        day: string | null
+        booked: number | null
+        confirmed: number | null
+        completed: number | null
+        follow_up: number | null
       }
       client_appointment_stats: {
         booked: number | null

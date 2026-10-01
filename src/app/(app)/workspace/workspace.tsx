@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { priorContact } from "@/lib/leads/prior-contact";
+import { formatPgTime } from "@/lib/leads/timezone";
 import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -327,6 +328,28 @@ export function Workspace({
                 </div>
 
                 {(() => {
+                  // lead.lastCall is this agent's own real previous dial of
+                  // this lead (call_attempts, via submitCallAttempt) — takes
+                  // priority over custom's legacy pre-import fields, which
+                  // only exist for leads that came from an already-worked
+                  // source sheet and never had a real call logged yet.
+                  if (lead.lastCall) {
+                    return (
+                      <div className="flex flex-col gap-1 rounded-md border border-warning bg-warning-tint px-3 py-2 text-sm text-warning">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <History className="h-4 w-4" /> Worked before
+                          <Badge variant="warning">{lead.lastCall.dispositionLabel}</Badge>
+                          <span className="ml-auto text-[11px] font-normal opacity-70">
+                            {new Date(lead.lastCall.endedAt).toLocaleString([], {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        </div>
+                        {lead.lastCall.notes && <p className="text-xs leading-snug">{lead.lastCall.notes}</p>}
+                      </div>
+                    );
+                  }
                   const { disposition, remarks } = priorContact(lead.custom);
                   if (!disposition && !remarks) return null;
                   return (
@@ -342,8 +365,8 @@ export function Workspace({
 
                 <div className="flex items-center gap-2 rounded-md bg-brand-green-tint px-3 py-2 text-sm text-brand-green-text">
                   <Clock className="h-4 w-4" />
-                  {lead.lead_local_time
-                    ? `Local time ${new Date(lead.lead_local_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                  {formatPgTime(lead.lead_local_time)
+                    ? `Local time ${formatPgTime(lead.lead_local_time)}`
                     : "Local time unavailable"}{" "}
                   · in calling window
                   <span className="ml-auto text-xs opacity-70">Your time zone: {agentTimezone}</span>

@@ -59,6 +59,30 @@ export default async function MyLeadsPage() {
     }
   }
 
+  // Latest real disposition per lead — the Disposition/Remarks columns
+  // previously only ever read leads.custom's legacy pre-import fields
+  // (priorContact()), so a lead that was actually dialed and dispositioned
+  // through this app (e.g. "Not Interested", "Invalid Number") showed
+  // nothing here even though leads.status already reflects it correctly.
+  const { data: callAttempts } = leadIds.length
+    ? await supabase
+        .from("call_attempts")
+        .select("lead_id, notes, ended_at, dispositions(label)")
+        .in("lead_id", leadIds)
+        .order("ended_at", { ascending: false })
+    : { data: [] as { lead_id: string; notes: string | null; ended_at: string; dispositions: { label: string } | null }[] };
+
+  const lastCallByLead = new Map<string, { dispositionLabel: string; notes: string | null; endedAt: string }>();
+  for (const c of callAttempts ?? []) {
+    if (!lastCallByLead.has(c.lead_id) && c.ended_at) {
+      lastCallByLead.set(c.lead_id, {
+        dispositionLabel: c.dispositions?.label ?? "Unknown",
+        notes: c.notes,
+        endedAt: c.ended_at,
+      });
+    }
+  }
+
   function pipelineStatus(leadStatus: string, attemptCount: number, appointment?: { status: string }): PipelineStatus {
     if (leadStatus === "converted") return "converted";
     if (appointment?.status === "completed") return "meeting_completed";
@@ -87,6 +111,7 @@ export default async function MyLeadsPage() {
       status: l.status,
       do_not_call: l.do_not_call,
       appointment,
+      lastCall: lastCallByLead.get(l.id) ?? null,
       pipelineStatus: pipelineStatus(l.status, l.attempt_count, appointment ?? undefined),
     };
   });
