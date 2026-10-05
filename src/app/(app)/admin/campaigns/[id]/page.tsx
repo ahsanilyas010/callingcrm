@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddLeadDialog } from "./add-lead-dialog";
 import { LeadRowActions } from "./lead-row-actions";
 import { AutoAssignButton } from "./auto-assign-button";
+import { BulkAssignDialog } from "./bulk-assign-dialog";
 import { SendEmailButton } from "./send-email-button";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { ManageAgentsDialog } from "./manage-agents-dialog";
@@ -130,6 +131,10 @@ export default async function CampaignDetailPage({
         <TabsContent value="leads">
           <div className="mb-3 flex justify-end gap-2">
             <AutoAssignButton campaignId={campaign.id} />
+            <BulkAssignDialog
+              campaignId={campaign.id}
+              roster={assignedAgents.map((a) => ({ id: a.id, full_name: a.name }))}
+            />
             <AddLeadDialog
               campaignId={campaign.id}
               campaignMarket={campaign.market}

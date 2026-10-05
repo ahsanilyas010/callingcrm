@@ -306,3 +306,53 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
     return { error: message };
   }
 }
+
+// Recovery path for a batch that landed Unassigned — either "Assign to"
+// was left on None during upload, or a re-upload meant to fix that got
+// every row rejected as a duplicate (uploadVendorCsv only ever assigns
+// insertedIds, never a lead that was already there). Auto-assign
+// (autoAssignReadyLeads) round-robins across the whole roster toward daily
+// targets; this is the one path to bulk-move an already-imported,
+// still-Unassigned set of leads onto one specific agent without
+// re-uploading. Same screen-then-assign order as assignImportedLeads.
+export async function assignUnassignedCampaignLeads(
+  campaignId: string,
+  agentId: string,
+): Promise<ActionResult> {
+  const profile = await requireProfile();
+  if (!["super_admin", "ops_manager", "team_lead"].includes(profile.role)) {
+    return { error: "Not authorized." };
+  }
+
+  const supabase = await createClient();
+  const { data: targets } = await supabase
+    .from("leads")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .is("assigned_to", null)
+    .eq("do_not_call", false);
+
+  if (!targets || targets.length === 0) {
+    return { error: "No unassigned leads in this campaign." };
+  }
+
+  const ids = targets.map((t) => t.id);
+  const nowIso = new Date().toISOString();
+
+  await supabase
+    .from("leads")
+    .update({ screening_status: "passed", screened_at: nowIso })
+    .in("id", ids);
+
+  const { data: updated, error } = await supabase
+    .from("leads")
+    .update({ assigned_to: agentId, assigned_at: nowIso, status: "assigned" })
+    .in("id", ids)
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/campaigns", "layout");
+  revalidatePath("/workspace", "layout");
+  return { ok: true, assigned: updated?.length ?? 0 };
+}

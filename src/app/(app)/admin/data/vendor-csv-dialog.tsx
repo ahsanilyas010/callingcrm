@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Upload, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
 import { marketToCountryHint } from "@/lib/phone";
 import { guessColumnMapping } from "@/lib/vendor-csv-auto-map";
@@ -138,8 +139,28 @@ export function VendorCsvDialog({
       setAssignAgentId("");
       setAssignTeamId("");
       router.refresh();
+
+      // Previously this closed silently on success, with no indication of
+      // what actually happened — including the case that bit us: a
+      // re-upload meant to fix a missed assignment where every row is
+      // rejected as a duplicate (already imported, unassigned from the
+      // first pass) and nothing is actually assigned, with zero signal
+      // that the "fix" did nothing.
+      const { imported = 0, rejected = 0, assigned = 0 } = state;
+      if (imported === 0 && rejected > 0) {
+        toast.warning(
+          `0 new leads imported — all ${rejected} row${rejected === 1 ? "" : "s"} matched leads already in this campaign. ` +
+            `If you meant to assign an already-imported batch, use "Assign unassigned" on the campaign page instead of re-uploading.`,
+          { duration: 10000 },
+        );
+      } else {
+        const parts = [`${imported} imported`];
+        if (assigned > 0) parts.push(`${assigned} assigned`);
+        if (rejected > 0) parts.push(`${rejected} rejected`);
+        toast.success(parts.join(" · "));
+      }
     }
-  }, [state.ok, router]);
+  }, [state, router]);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
