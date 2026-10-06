@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { getConnector, connectorRegistry } from "@/lib/connectors/registry";
 import { importLeads } from "@/lib/connectors/pipeline";
-import { parseVendorFile, normaliseVendorRow, type VendorCsvFieldMap } from "@/lib/connectors/vendor-csv";
+import { parseVendorFile, normaliseVendorRow, autoMapVendorColumns } from "@/lib/connectors/vendor-csv";
 import { captureException } from "@/lib/error-tracking";
 import type { Json } from "@/lib/supabase/types";
 
@@ -215,40 +215,22 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
   );
   if (assignmentError) return { error: assignmentError };
 
-  const fieldMap: VendorCsvFieldMap = {
-    phone: String(formData.get("map_phone") ?? "") || undefined,
-    firstName: String(formData.get("map_first_name") ?? "") || undefined,
-    lastName: String(formData.get("map_last_name") ?? "") || undefined,
-    companyName: String(formData.get("map_company_name") ?? "") || undefined,
-    jobTitle: String(formData.get("map_job_title") ?? "") || undefined,
-    email: String(formData.get("map_email") ?? "") || undefined,
-    addressLine1: String(formData.get("map_address") ?? "") || undefined,
-    city: String(formData.get("map_city") ?? "") || undefined,
-    region: String(formData.get("map_region") ?? "") || undefined,
-    postcode: String(formData.get("map_postcode") ?? "") || undefined,
-    externalRef: String(formData.get("map_external_ref") ?? "") || undefined,
-    council: String(formData.get("map_council") ?? "") || undefined,
-    projectName: String(formData.get("map_project_name") ?? "") || undefined,
-    projectType: String(formData.get("map_project_type") ?? "") || undefined,
-    units: String(formData.get("map_units") ?? "") || undefined,
-    summary: String(formData.get("map_summary") ?? "") || undefined,
-    decision: String(formData.get("map_decision") ?? "") || undefined,
-    decisionDate: String(formData.get("map_decision_date") ?? "") || undefined,
-    contactNameAddress: String(formData.get("map_contact_name_address") ?? "") || undefined,
-    portalUrl: String(formData.get("map_portal_url") ?? "") || undefined,
-    sourceNotes: String(formData.get("map_source_notes") ?? "") || undefined,
-    applicationDate: String(formData.get("map_application_date") ?? "") || undefined,
-    authority: String(formData.get("map_authority") ?? "") || undefined,
-    category: String(formData.get("map_category") ?? "") || undefined,
-    applicationType: String(formData.get("map_application_type") ?? "") || undefined,
-    proposal: String(formData.get("map_proposal") ?? "") || undefined,
-    architectName: String(formData.get("map_architect_name") ?? "") || undefined,
-    web: String(formData.get("map_web") ?? "") || undefined,
-    contact: String(formData.get("map_contact") ?? "") || undefined,
-    comments: String(formData.get("map_comments") ?? "") || undefined,
-    disposition: String(formData.get("map_disposition") ?? "") || undefined,
-  };
-  if (!fieldMap.phone) return { error: "A phone-number column mapping is required." };
+  let headers: string[];
+  let rows: Record<string, unknown>[];
+  try {
+    ({ headers, rows } = parseVendorFile(await file.arrayBuffer()));
+  } catch {
+    return { error: `Could not read "${file.name}" — make sure it's a valid .csv or .xlsx file.` };
+  }
+
+  const fieldMap = autoMapVendorColumns(headers);
+  if (!fieldMap.phone) {
+    return {
+      error:
+        `Couldn't automatically find a phone-number column in "${file.name}". Columns found: ${headers.join(", ")}. ` +
+        `Rename the phone column to something like "Phone", "Mobile" or "Contact Number" and re-upload.`,
+    };
+  }
 
   const { data: run, error: runError } = await supabase
     .from("source_fetch_runs")
@@ -267,7 +249,6 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
   if (runError || !run) return { error: runError?.message ?? "Could not start import run." };
 
   try {
-    const { rows } = parseVendorFile(await file.arrayBuffer());
     const records = rows
       .map((row) => normaliseVendorRow(row, fieldMap, countryHint))
       .filter((r) => r !== null);

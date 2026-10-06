@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useRef } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,6 @@ import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { uploadVendorCsv, type ActionResult } from "@/lib/actions/data-sources";
 import { marketToCountryHint } from "@/lib/phone";
-import { guessColumnMapping } from "@/lib/vendor-csv-auto-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,46 +28,6 @@ import {
 } from "@/components/ui/dialog";
 
 const initialState: ActionResult = {};
-
-const CONTACT_FIELDS: { key: string; label: string; required?: boolean }[] = [
-  { key: "map_phone", label: "Phone", required: true },
-  { key: "map_first_name", label: "First name" },
-  { key: "map_last_name", label: "Last name" },
-  { key: "map_contact_name_address", label: "Contact name & address" },
-  { key: "map_company_name", label: "Company" },
-  { key: "map_job_title", label: "Job title" },
-  { key: "map_email", label: "Email" },
-  { key: "map_address", label: "Address line 1" },
-  { key: "map_city", label: "City" },
-  { key: "map_region", label: "Region" },
-  { key: "map_postcode", label: "Postcode" },
-  { key: "map_external_ref", label: "Sr. No / external reference" },
-];
-
-// No dedicated leads column — stored under leads.custom and shown on the
-// lead's Details view. Matches the planning/construction-lead sheet
-// format (Council, Project Type, Decision, Portal URL, ...).
-const PROJECT_FIELDS: { key: string; label: string }[] = [
-  { key: "map_council", label: "Council" },
-  { key: "map_authority", label: "Authority" },
-  { key: "map_project_name", label: "Name (project / site)" },
-  { key: "map_project_type", label: "Project type" },
-  { key: "map_application_type", label: "Application type" },
-  { key: "map_category", label: "Category" },
-  { key: "map_application_date", label: "Application date" },
-  { key: "map_units", label: "Units" },
-  { key: "map_summary", label: "Summary" },
-  { key: "map_proposal", label: "Proposal" },
-  { key: "map_architect_name", label: "Architect Name" },
-  { key: "map_decision", label: "Decision" },
-  { key: "map_decision_date", label: "Decision date" },
-  { key: "map_disposition", label: "Disposition" },
-  { key: "map_contact", label: "Contact" },
-  { key: "map_portal_url", label: "Portal URL" },
-  { key: "map_web", label: "Web" },
-  { key: "map_source_notes", label: "Notes" },
-  { key: "map_comments", label: "Comments" },
-];
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
@@ -92,9 +51,6 @@ export function VendorCsvDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(uploadVendorCsv, initialState);
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [autoMapped, setAutoMapped] = useState(false);
   const [campaignId, setCampaignId] = useState(campaigns[0]?.id ?? "");
   const [dataSourceId, setDataSourceId] = useState(dataSources[0]?.id ?? "");
   const [country, setCountry] = useState(marketToCountryHint(campaigns[0]?.market));
@@ -102,7 +58,7 @@ export function VendorCsvDialog({
   const [assignMode, setAssignMode] = useState<"none" | "agent" | "team">("none");
   const [assignAgentId, setAssignAgentId] = useState("");
   const [assignTeamId, setAssignTeamId] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileChosen, setFileChosen] = useState(false);
   const router = useRouter();
 
   // Default the phone-parsing country to whichever market the selected
@@ -132,9 +88,7 @@ export function VendorCsvDialog({
   useEffect(() => {
     if (state.ok) {
       setOpen(false);
-      setHeaders([]);
-      setMapping({});
-      setAutoMapped(false);
+      setFileChosen(false);
       setAssignMode("none");
       setAssignAgentId("");
       setAssignTeamId("");
@@ -162,21 +116,6 @@ export function VendorCsvDialog({
     }
   }, [state, router]);
 
-  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const XLSX = await import("xlsx");
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
-    const fileHeaders = rows.length > 0 ? Object.keys(rows[0]) : [];
-    setHeaders(fileHeaders);
-    const guessed = guessColumnMapping(fileHeaders);
-    setMapping(guessed);
-    setAutoMapped(Object.keys(guessed).length > 0);
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
@@ -186,8 +125,11 @@ export function VendorCsvDialog({
         <DialogHeader>
           <DialogTitle>Import vendor CSV / XLSX</DialogTitle>
           <DialogDescription>
-            Every row gets validated, suppression-screened and committed the same way as any other
-            source — a licensed vendor list is no more trusted than a spreadsheet by default.
+            Columns are mapped automatically from the file&rsquo;s own headers — no review step. Every
+            column the importer recognises (phone, name, company, address, …) is used directly;
+            anything else is kept as-is and shown on the lead&rsquo;s Details view, so the agent sees
+            everything the sheet had. Every row is still validated, suppression-screened and
+            committed the same way as any other source.
           </DialogDescription>
         </DialogHeader>
 
@@ -335,92 +277,10 @@ export function VendorCsvDialog({
               name="file"
               type="file"
               accept=".csv,.xlsx,.xls"
-              ref={fileInputRef}
-              onChange={onFileChange}
+              onChange={(e) => setFileChosen(Boolean(e.target.files?.[0]))}
               required
             />
           </div>
-
-          {headers.length > 0 && (
-            <div className="rounded-md border border-line p-3">
-              <p className="mb-2 text-xs font-medium text-ink">
-                Map columns
-                {autoMapped && (
-                  <span className="ml-1.5 font-normal text-muted">
-                    — guessed from your file&rsquo;s headers, review before importing
-                  </span>
-                )}
-              </p>
-
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-                Contact fields
-              </p>
-              <div className="mb-3 grid grid-cols-2 gap-2.5">
-                {CONTACT_FIELDS.map((f) => (
-                  <div key={f.key} className="flex flex-col gap-1">
-                    <Label className="text-[11px]">
-                      {f.label}
-                      {f.required && <span className="text-danger"> *</span>}
-                    </Label>
-                    <Select
-                      value={mapping[f.key] ?? "__none"}
-                      onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Not mapped" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">Not mapped</SelectItem>
-                        {headers.map((h) => (
-                          <SelectItem key={h} value={h}>
-                            {h}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <input
-                      type="hidden"
-                      name={f.key}
-                      value={mapping[f.key] && mapping[f.key] !== "__none" ? mapping[f.key] : ""}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-                Project details{" "}
-                <span className="normal-case text-muted">(no lead list column — shown on lead details)</span>
-              </p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {PROJECT_FIELDS.map((f) => (
-                  <div key={f.key} className="flex flex-col gap-1">
-                    <Label className="text-[11px]">{f.label}</Label>
-                    <Select
-                      value={mapping[f.key] ?? "__none"}
-                      onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Not mapped" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">Not mapped</SelectItem>
-                        {headers.map((h) => (
-                          <SelectItem key={h} value={h}>
-                            {h}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <input
-                      type="hidden"
-                      name={f.key}
-                      value={mapping[f.key] && mapping[f.key] !== "__none" ? mapping[f.key] : ""}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <AnimatePresence>
             {state.error && (
@@ -443,9 +303,7 @@ export function VendorCsvDialog({
               disabled={
                 !campaignId ||
                 !dataSourceId ||
-                headers.length === 0 ||
-                !mapping.map_phone ||
-                mapping.map_phone === "__none" ||
+                !fileChosen ||
                 (assignMode === "agent" && !assignAgentId) ||
                 (assignMode === "team" && !assignTeamId)
               }
