@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -75,6 +76,7 @@ export function Workspace({
   agentName,
   agentTimezone,
   campaign,
+  campaigns,
   initialLead,
   dispositions,
   initialCounts,
@@ -82,10 +84,12 @@ export function Workspace({
   agentName: string;
   agentTimezone: string;
   campaign: Campaign;
+  campaigns: Pick<Campaign, "id" | "code" | "name">[];
   initialLead: WorkspaceLead | null;
   dispositions: WorkspaceDisposition[];
   initialCounts: QueueCounts;
 }) {
+  const router = useRouter();
   const [lead, setLead] = useState(initialLead);
   const [counts, setCounts] = useState(initialCounts);
   const [dispositionId, setDispositionId] = useState("");
@@ -201,7 +205,27 @@ export function Workspace({
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-line bg-white px-4 py-1.5">
         <div className="flex items-center gap-2 text-xs text-muted">
-          <Badge variant="blue">{campaign.code}</Badge>
+          {campaigns.length > 1 ? (
+            <Select
+              value={campaign.id}
+              onValueChange={(id) => router.push(id === campaigns[0].id ? "/workspace" : `/workspace?campaign=${id}`)}
+            >
+              <SelectTrigger className="h-6 w-auto gap-1 border-none bg-transparent px-1.5 py-0 text-xs">
+                <SelectValue>
+                  <Badge variant="blue">{campaign.code}</Badge>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {campaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.code} — {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="blue">{campaign.code}</Badge>
+          )}
           <span>{agentName}</span>
         </div>
         <span className="flex items-center gap-1 text-[11px] tabular text-muted">
