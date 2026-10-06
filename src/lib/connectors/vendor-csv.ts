@@ -1,6 +1,7 @@
 import "server-only";
 import * as XLSX from "xlsx";
 import type { NormalisedLead } from "./types";
+import { guessColumnMapping } from "@/lib/vendor-csv-auto-map";
 
 // Section 6.4 — "Vendor CSV | Both | Licensed | Generic import path with
 // mandatory provenance capture." Handles .csv and .xlsx uniformly via
@@ -67,6 +68,55 @@ export function parseVendorFile(buffer: ArrayBuffer): {
   return { headers, rows };
 }
 
+// guessColumnMapping (src/lib/vendor-csv-auto-map.ts) produces "map_xxx" ->
+// raw header keys for the admin dialog's old manual-review UI. This is the
+// same guesser run headless, with no review step: whichever column it
+// finds for a field is what gets used, full stop. The map_xxx names don't
+// match VendorCsvFieldMap's own property names, so translate them.
+const MAP_KEY_TO_FIELD: Record<string, keyof VendorCsvFieldMap> = {
+  map_phone: "phone",
+  map_first_name: "firstName",
+  map_last_name: "lastName",
+  map_contact_name_address: "contactNameAddress",
+  map_company_name: "companyName",
+  map_job_title: "jobTitle",
+  map_email: "email",
+  map_address: "addressLine1",
+  map_city: "city",
+  map_region: "region",
+  map_postcode: "postcode",
+  map_external_ref: "externalRef",
+  map_council: "council",
+  map_authority: "authority",
+  map_project_name: "projectName",
+  map_project_type: "projectType",
+  map_application_type: "applicationType",
+  map_category: "category",
+  map_application_date: "applicationDate",
+  map_units: "units",
+  map_summary: "summary",
+  map_proposal: "proposal",
+  map_architect_name: "architectName",
+  map_decision: "decision",
+  map_decision_date: "decisionDate",
+  map_disposition: "disposition",
+  map_contact: "contact",
+  map_portal_url: "portalUrl",
+  map_web: "web",
+  map_source_notes: "sourceNotes",
+  map_comments: "comments",
+};
+
+export function autoMapVendorColumns(headers: string[]): VendorCsvFieldMap {
+  const guessed = guessColumnMapping(headers);
+  const fieldMap: VendorCsvFieldMap = {};
+  for (const [mapKey, header] of Object.entries(guessed)) {
+    const field = MAP_KEY_TO_FIELD[mapKey];
+    if (field) fieldMap[field] = header;
+  }
+  return fieldMap;
+}
+
 export function normaliseVendorRow(
   row: Record<string, unknown>,
   fieldMap: VendorCsvFieldMap,
@@ -105,6 +155,16 @@ export function normaliseVendorRow(
   setCustom("contact", get(fieldMap.contact));
   setCustom("comments", get(fieldMap.comments));
   setCustom("prior_disposition", get(fieldMap.disposition));
+
+  // Every column the auto-mapper didn't claim for a dedicated field still
+  // gets kept, under its own original header, instead of being silently
+  // dropped — the agent should see everything the uploaded sheet had, not
+  // just the subset this importer has a named slot for.
+  const consumedHeaders = new Set(Object.values(fieldMap).filter((v): v is string => Boolean(v)));
+  for (const header of Object.keys(row)) {
+    if (consumedHeaders.has(header) || header in custom) continue;
+    setCustom(header, get(header));
+  }
 
   return {
     externalRef: get(fieldMap.externalRef),
