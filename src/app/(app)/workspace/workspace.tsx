@@ -53,6 +53,8 @@ interface Campaign {
   opening_disclosure: string | null;
 }
 
+export const WORKSPACE_CAMPAIGN_COOKIE = "workspace_campaign";
+
 function useWrapTimer(active: boolean) {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
@@ -208,7 +210,14 @@ export function Workspace({
           {campaigns.length > 1 ? (
             <Select
               value={campaign.id}
-              onValueChange={(id) => router.push(id === campaigns[0].id ? "/workspace" : `/workspace?campaign=${id}`)}
+              onValueChange={(id) => {
+                // Persisted in a cookie, not just the URL — the sidebar's
+                // "Dial workspace" link (and any other plain /workspace
+                // link) carries no query param, so without this the choice
+                // was lost the moment the agent navigated away and back.
+                document.cookie = `${WORKSPACE_CAMPAIGN_COOKIE}=${id}; path=/; max-age=31536000; samesite=lax`;
+                router.push(`/workspace?campaign=${id}`);
+              }}
             >
               <SelectTrigger className="h-6 w-auto gap-1 border-none bg-transparent px-1.5 py-0 text-xs">
                 <SelectValue>
