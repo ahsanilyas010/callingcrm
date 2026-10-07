@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { priorContact } from "@/lib/leads/prior-contact";
 import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
 import { EditLeadDialog } from "./edit-lead-dialog";
@@ -48,6 +55,15 @@ export interface LeadTableRow {
   custom: unknown;
   status: string;
   do_not_call: boolean;
+  // null when the lead's campaign couldn't be joined — shouldn't happen in
+  // practice, but a missing campaign shouldn't crash the whole table.
+  campaign_code: string | null;
+  campaign_name: string | null;
+  // Set by "Book callback" at disposition time, independent of the
+  // appointments table (which only exists for the appointment_set
+  // disposition) — this is the only place a generic scheduled callback is
+  // visible at all; previously nothing in this table showed it.
+  next_action_at: string | null;
   appointment: { status: string; scheduled_at: string | null } | null;
   lastCall: { dispositionLabel: string; notes: string | null; endedAt: string } | null;
   pipelineStatus: PipelineStatus;
@@ -55,6 +71,16 @@ export interface LeadTableRow {
 
 export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
   const [filter, setFilter] = useState<PipelineStatus | "all">("all");
+  const [campaignFilter, setCampaignFilter] = useState("all");
+  const [callbackOnly, setCallbackOnly] = useState(false);
+
+  const campaigns = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      if (r.campaign_code) seen.set(r.campaign_code, r.campaign_name ?? r.campaign_code);
+    }
+    return Array.from(seen, ([code, name]) => ({ code, name }));
+  }, [rows]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: rows.length };
@@ -62,11 +88,48 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
     return c;
   }, [rows]);
 
-  const visible = filter === "all" ? rows : rows.filter((r) => r.pipelineStatus === filter);
+  const callbackCount = useMemo(() => rows.filter((r) => r.next_action_at).length, [rows]);
+
+  const visible = rows.filter(
+    (r) =>
+      (filter === "all" || r.pipelineStatus === filter) &&
+      (campaignFilter === "all" || r.campaign_code === campaignFilter) &&
+      (!callbackOnly || r.next_action_at),
+  );
 
   return (
     <div>
+      {campaigns.length > 1 && (
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-xs text-muted">Campaign</span>
+          <Select value={campaignFilter} onValueChange={setCampaignFilter}>
+            <SelectTrigger className="h-7 w-48 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All campaigns</SelectItem>
+              {campaigns.map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {c.code} — {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="mb-3 flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => setCallbackOnly((v) => !v)}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            callbackOnly
+              ? "border-brand-orange bg-brand-orange-tint text-brand-orange-text"
+              : "border-line bg-white text-muted hover:text-ink"
+          }`}
+        >
+          Callback scheduled <span className="tabular">({callbackCount})</span>
+        </button>
         {FILTERS.map((f) => (
           <button
             key={f.value}
@@ -88,11 +151,13 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
           <thead>
             <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
               <th className="px-3 py-2 font-medium">Name</th>
+              <th className="px-3 py-2 font-medium">Campaign</th>
               <th className="px-3 py-2 font-medium">Phone</th>
               <th className="px-3 py-2 font-medium">Project</th>
               <th className="px-3 py-2 font-medium">Disposition</th>
               <th className="px-3 py-2 font-medium">Remarks</th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Callback</th>
               <th className="px-3 py-2 font-medium">Appointment</th>
               <th className="px-3 py-2 font-medium" />
             </tr>
@@ -110,6 +175,9 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
               return (
                 <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
                   <td className="px-3 py-1.5 font-medium text-ink">{leadName}</td>
+                  <td className="px-3 py-1.5">
+                    {l.campaign_code ? <Badge variant="neutral">{l.campaign_code}</Badge> : "—"}
+                  </td>
                   <td className="px-3 py-1.5 tabular">{l.phone_e164}</td>
                   <td className="max-w-[180px] truncate px-3 py-1.5 text-muted">
                     {typeof custom.project_type === "string" ? custom.project_type : "—"}
@@ -125,6 +193,24 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
                       <Badge variant="danger">Suppressed</Badge>
                     ) : (
                       <Badge variant="neutral">{l.status.replace(/_/g, " ")}</Badge>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5">
+                    {l.next_action_at ? (
+                      <span
+                        className={
+                          new Date(l.next_action_at) <= new Date()
+                            ? "font-medium text-brand-orange-text"
+                            : "text-muted"
+                        }
+                      >
+                        {new Date(l.next_action_at).toLocaleString("en-GB", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </span>
+                    ) : (
+                      "—"
                     )}
                   </td>
                   <td className="px-3 py-1.5">
@@ -170,7 +256,7 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">
+                <td colSpan={10} className="px-3 py-8 text-center text-sm text-muted">
                   No leads match this filter.
                 </td>
               </tr>

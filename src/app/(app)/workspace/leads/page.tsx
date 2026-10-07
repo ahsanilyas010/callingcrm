@@ -17,9 +17,14 @@ export default async function MyLeadsPage() {
 
   // RLS (leads_select) already scopes this to leads assigned to the caller
   // — the explicit filter here is just for query efficiency, not security.
+  // An agent can be assigned to more than one campaign at once, and this
+  // page (unlike the dial workspace) has never been campaign-scoped — it's
+  // meant to be the one place that shows everything. campaigns(code, name)
+  // is what lets the table actually say which campaign each row belongs
+  // to, which it previously didn't at all.
   const { data: leads } = await supabase
     .from("leads")
-    .select("*")
+    .select("*, campaigns(code, name)")
     .eq("assigned_to", user.id)
     .order("updated_at", { ascending: false })
     .limit(500);
@@ -92,8 +97,17 @@ export default async function MyLeadsPage() {
     return "other";
   }
 
+  // The join can come back as an object or (depending on how PostgREST
+  // resolved the FK) a one-element array — normalise both to a plain
+  // campaign or null.
+  const campaignOf = (l: (typeof rows)[number]) => {
+    const c = l.campaigns as { code: string; name: string } | { code: string; name: string }[] | null;
+    return Array.isArray(c) ? c[0] ?? null : c;
+  };
+
   const tableRows: LeadTableRow[] = rows.map((l) => {
     const appointment = latestAppointmentByLead.get(l.id) ?? null;
+    const campaign = campaignOf(l);
     return {
       id: l.id,
       first_name: l.first_name,
@@ -110,6 +124,9 @@ export default async function MyLeadsPage() {
       custom: l.custom,
       status: l.status,
       do_not_call: l.do_not_call,
+      campaign_code: campaign?.code ?? null,
+      campaign_name: campaign?.name ?? null,
+      next_action_at: l.next_action_at,
       appointment,
       lastCall: lastCallByLead.get(l.id) ?? null,
       pipelineStatus: pipelineStatus(l.status, l.attempt_count, appointment ?? undefined),

@@ -52,7 +52,7 @@ export async function getAssignedCampaigns() {
     )
     .eq("user_id", user.id);
 
-  return (data ?? [])
+  const campaigns = (data ?? [])
     .map(
       (row) =>
         (
@@ -71,6 +71,14 @@ export async function getAssignedCampaigns() {
         ).campaigns,
     )
     .filter(Boolean);
+
+  // campaign_assignments has no join-ordering lever that reliably sorts a
+  // to-one embed like this, which otherwise leaves the result in whatever
+  // order Postgres feels like (effectively arbitrary). The workspace page
+  // falls back to campaigns[0] when nothing else picks one, so an agent
+  // assigned to more than one campaign needs that order to be stable.
+  campaigns.sort((a, b) => a.code.localeCompare(b.code));
+  return campaigns;
 }
 
 export async function getQueueCounts(campaignId: string): Promise<QueueCounts> {
