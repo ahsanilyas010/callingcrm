@@ -1,8 +1,3 @@
-// Generated from the live Supabase project (uvgekzergvtbvvhvuyyh).
-// Regenerate after every migration:
-//   supabase gen types typescript --project-id uvgekzergvtbvvhvuyyh > src/lib/supabase/types.ts
-// or via the Supabase MCP `generate_typescript_types` tool.
-
 export type Json =
   | string
   | number
@@ -1402,6 +1397,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leads_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_batch_performance"
+            referencedColumns: ["batch_id"]
+          },
+          {
             foreignKeyName: "leads_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
@@ -1981,6 +1983,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "suppression_runs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_batch_performance"
+            referencedColumns: ["batch_id"]
+          },
+          {
             foreignKeyName: "suppression_runs_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
@@ -2216,6 +2225,54 @@ export type Database = {
           },
         ]
       }
+      v_batch_performance: {
+        Row: {
+          acquired_at: string | null
+          batch_id: string | null
+          campaign_id: string | null
+          data_source_id: string | null
+          dialed: number | null
+          original_filename: string | null
+          remaining: number | null
+          rows_accepted: number | null
+          rows_duplicate: number | null
+          rows_rejected: number | null
+          rows_suppressed: number | null
+          rows_total: number | null
+          status: string | null
+          uploaded_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_batches_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_batches_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_batches_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_source_performance"
+            referencedColumns: ["data_source_id"]
+          },
+          {
+            foreignKeyName: "lead_batches_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_campaign_funnel: {
         Row: {
           campaign_id: string | null
@@ -2302,6 +2359,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lead_batches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_batch_performance"
+            referencedColumns: ["batch_id"]
           },
           {
             foreignKeyName: "leads_campaign_id_fkey"
