@@ -248,6 +248,28 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
     .single();
   if (runError || !run) return { error: runError?.message ?? "Could not start import run." };
 
+  // lead_batches is the per-upload record a manager can click into to see
+  // every number from this exact file and its outcome — source_fetch_runs
+  // (above) has no FK from leads back to it, so there was never a way to
+  // ask "which rows came from upload X" after the fact. Kept alongside
+  // source_fetch_runs rather than replacing it: the Fetch history tab
+  // already reads that table for both connector runs and CSV uploads.
+  const { data: batch, error: batchError } = await supabase
+    .from("lead_batches")
+    .insert({
+      campaign_id: campaignId,
+      data_source_id: dataSourceId,
+      uploaded_by: profile.id,
+      original_filename: file.name,
+      acquired_at: new Date().toISOString(),
+      column_mapping: fieldMap as Json,
+      rows_total: rows.length,
+      status: "validating",
+    })
+    .select("id")
+    .single();
+  if (batchError || !batch) return { error: batchError?.message ?? "Could not start batch." };
+
   try {
     const records = rows
       .map((row) => normaliseVendorRow(row, fieldMap, countryHint))
@@ -257,10 +279,43 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
       supabase,
       campaignId,
       dataSourceId,
+      batchId: batch.id,
       records,
     });
 
     const assigned = agentIds ? await assignImportedLeads(supabase, outcome.insertedIds, agentIds) : 0;
+
+    // normaliseVendorRow() drops a row with no phone value at all before it
+    // ever reaches importLeads() — never counted in outcome.rejected, so it
+    // has to be added back in here to land in one of the four buckets below
+    // rather than vanishing from the batch's own total.
+    const normaliseDropped = rows.length - records.length;
+    const duplicateCount = outcome.rejections.filter(
+      (r) => r.reason === "Duplicate phone number in this campaign.",
+    ).length;
+    const otherRejected = normaliseDropped + (outcome.rejected - duplicateCount);
+
+    let suppressedCount = 0;
+    if (outcome.insertedIds.length > 0) {
+      const { count } = await supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .in("id", outcome.insertedIds)
+        .eq("do_not_call", true);
+      suppressedCount = count ?? 0;
+    }
+    const acceptedCount = outcome.imported - suppressedCount;
+
+    await supabase
+      .from("lead_batches")
+      .update({
+        rows_accepted: acceptedCount,
+        rows_rejected: otherRejected,
+        rows_duplicate: duplicateCount,
+        rows_suppressed: suppressedCount,
+        status: "complete",
+      })
+      .eq("id", batch.id);
 
     await supabase
       .from("source_fetch_runs")
@@ -283,6 +338,7 @@ export async function uploadVendorCsv(_prev: ActionResult, formData: FormData): 
       .from("source_fetch_runs")
       .update({ finished_at: new Date().toISOString(), status: "failed", error: message })
       .eq("id", run.id);
+    await supabase.from("lead_batches").update({ status: "failed", notes: message }).eq("id", batch.id);
     revalidatePath("/admin/data");
     return { error: message };
   }

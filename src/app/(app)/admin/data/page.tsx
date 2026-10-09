@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/current-profile";
 import { redirect } from "next/navigation";
@@ -24,6 +25,7 @@ export default async function DataPage() {
     { data: performance },
     { data: agents },
     { data: teams },
+    { data: batches },
   ] = await Promise.all([
     supabase.from("data_sources").select("*").order("created_at", { ascending: false }),
     supabase.from("campaigns").select("id, name, code, market").order("name"),
@@ -42,6 +44,7 @@ export default async function DataPage() {
       .eq("is_active", true)
       .order("full_name"),
     supabase.from("teams").select("id, name").order("name"),
+    supabase.from("v_batch_performance").select("*").order("acquired_at", { ascending: false }).limit(50),
   ]);
 
   const connectorSources = (dataSources ?? []).filter(
@@ -51,6 +54,20 @@ export default async function DataPage() {
     (d) => !(d.config as DataSourceConfig | null)?.connector_key,
   );
 
+  // v_batch_performance carries only ids, not names — PostgREST embedding
+  // on a view that joins two tables sharing a column name (data_source_id
+  // also matches v_source_performance's own primary column) is ambiguous,
+  // so these are resolved the same way the leaderboard on /admin/performance
+  // does it: a plain id lookup built from campaigns/dataSources/agents
+  // already fetched above, rather than fighting PostgREST's embed syntax.
+  const campaignById = new Map((campaigns ?? []).map((c) => [c.id, `${c.code} — ${c.name}`]));
+  const dataSourceById = new Map((dataSources ?? []).map((d) => [d.id, d.name]));
+  const batchUploaderIds = Array.from(new Set((batches ?? []).map((b) => b.uploaded_by).filter(Boolean)));
+  const { data: batchUploaders } = batchUploaderIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", batchUploaderIds as string[])
+    : { data: [] as { id: string; full_name: string | null }[] };
+  const uploaderById = new Map((batchUploaders ?? []).map((p) => [p.id, p.full_name]));
+
   return (
     <div className="p-4">
       <Tabs defaultValue="sources">
@@ -58,6 +75,7 @@ export default async function DataPage() {
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="history">Fetch history</TabsTrigger>
           <TabsTrigger value="performance">Source performance</TabsTrigger>
+          <TabsTrigger value="batches">Upload batches</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sources">
@@ -277,6 +295,77 @@ export default async function DataPage() {
                   <tr>
                     <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">
                       No sources yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="batches">
+          <p className="mb-3 text-xs text-muted">
+            One row per CSV/XLSX upload. Rejected = invalid/missing phone, Duplicate = already in
+            this campaign, Suppressed = inserted but blocked by the DNC/suppression list — none of
+            the three are dialable. Click a file to see every number from that upload.
+          </p>
+          <div className="overflow-x-auto rounded-lg border border-line bg-white">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line bg-canvas text-left text-xs text-muted">
+                  <th className="px-3 py-2 font-medium">File</th>
+                  <th className="px-3 py-2 font-medium">Campaign</th>
+                  <th className="px-3 py-2 font-medium">Source</th>
+                  <th className="px-3 py-2 font-medium">Uploaded by</th>
+                  <th className="px-3 py-2 font-medium">Total</th>
+                  <th className="px-3 py-2 font-medium">Dialed</th>
+                  <th className="px-3 py-2 font-medium">Remaining</th>
+                  <th className="px-3 py-2 font-medium">Rejected</th>
+                  <th className="px-3 py-2 font-medium">Duplicate</th>
+                  <th className="px-3 py-2 font-medium">Suppressed</th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">Uploaded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(batches ?? []).map((b) => (
+                  <tr key={b.batch_id} className="h-[38px] border-b border-line last:border-0">
+                    <td className="px-3 py-1.5 font-medium text-ink">
+                      <Link href={`/admin/data/batches/${b.batch_id}`} className="hover:underline">
+                        {b.original_filename ?? "—"}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-1.5 text-xs text-muted">
+                      {b.campaign_id ? campaignById.get(b.campaign_id) ?? "—" : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-xs text-muted">
+                      {b.data_source_id ? dataSourceById.get(b.data_source_id) ?? "—" : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-xs text-muted">
+                      {b.uploaded_by ? uploaderById.get(b.uploaded_by) ?? "—" : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.rows_total}</td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.dialed}</td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.remaining}</td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.rows_rejected}</td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.rows_duplicate}</td>
+                    <td className="px-3 py-1.5 tabular text-muted">{b.rows_suppressed}</td>
+                    <td className="px-3 py-1.5">
+                      {b.status === "complete" && <Badge variant="confirm">Complete</Badge>}
+                      {b.status === "failed" && <Badge variant="danger">Failed</Badge>}
+                      {b.status !== "complete" && b.status !== "failed" && (
+                        <Badge variant="warning">{b.status}</Badge>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 tabular text-xs text-muted">
+                      {b.acquired_at ? new Date(b.acquired_at).toLocaleString() : "—"}
+                    </td>
+                  </tr>
+                ))}
+                {(batches ?? []).length === 0 && (
+                  <tr>
+                    <td colSpan={12} className="px-3 py-8 text-center text-sm text-muted">
+                      No uploads yet.
                     </td>
                   </tr>
                 )}
