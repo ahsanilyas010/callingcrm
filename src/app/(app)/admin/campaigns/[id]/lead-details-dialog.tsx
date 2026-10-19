@@ -47,8 +47,6 @@ export function LeadDetailsDialog({
     .join(", ");
   if (address) contactRows.push({ label: "Address", value: address });
 
-  if (entries.length === 0 && contactRows.length === 0) return null;
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label={`Details for ${leadName}`}>
@@ -76,6 +74,11 @@ export function LeadDetailsDialog({
               <span className="text-sm text-ink">{String(value)}</span>
             </div>
           ))}
+          {contactRows.length === 0 && entries.length === 0 && (
+            <p className="py-4 text-center text-sm text-muted">
+              No additional contact details or source context on file for this lead.
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
