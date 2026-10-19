@@ -124,6 +124,8 @@ export default async function MyLeadsPage() {
       custom: l.custom,
       status: l.status,
       do_not_call: l.do_not_call,
+      attempt_count: l.attempt_count,
+      campaign_id: l.campaign_id,
       campaign_code: campaign?.code ?? null,
       campaign_name: campaign?.name ?? null,
       next_action_at: l.next_action_at,
