@@ -10,9 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { priorContact } from "@/lib/leads/prior-contact";
-import { LeadDetailsDialog } from "@/app/(app)/admin/campaigns/[id]/lead-details-dialog";
 import { EditLeadDialog } from "./edit-lead-dialog";
 import { LeadHistoryDialog } from "./lead-history-dialog";
+import { LeadWorkspaceDialog } from "./lead-workspace-dialog";
 
 export type PipelineStatus =
   | "contacted"
@@ -55,6 +55,12 @@ export interface LeadTableRow {
   custom: unknown;
   status: string;
   do_not_call: boolean;
+  attempt_count: number;
+  // The raw campaign id — campaign_code/campaign_name below are for
+  // display; this is what submitCallAttempt/getDispositions need, so a
+  // lead can be dispositioned from this table the same way it is from
+  // the dial workspace.
+  campaign_id: string;
   // null when the lead's campaign couldn't be joined — shouldn't happen in
   // practice, but a missing campaign shouldn't crash the whole table.
   campaign_code: string | null;
@@ -174,7 +180,28 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
               const leadName = [l.first_name, l.last_name].filter(Boolean).join(" ") || l.company_name || "—";
               return (
                 <tr key={l.id} className="h-[38px] border-b border-line last:border-0">
-                  <td className="px-3 py-1.5 font-medium text-ink">{leadName}</td>
+                  <td className="px-3 py-1.5 font-medium text-ink">
+                    <LeadWorkspaceDialog
+                      trigger={<span className="hover:text-brand-blue hover:underline">{leadName}</span>}
+                      lead={{
+                        id: l.id,
+                        campaign_id: l.campaign_id,
+                        first_name: l.first_name,
+                        last_name: l.last_name,
+                        company_name: l.company_name,
+                        job_title: l.job_title,
+                        phone_e164: l.phone_e164,
+                        email: l.email,
+                        address_line1: l.address_line1,
+                        city: l.city,
+                        region: l.region,
+                        postcode: l.postcode,
+                        custom: l.custom,
+                        attempt_count: l.attempt_count,
+                        lastCall: l.lastCall,
+                      }}
+                    />
+                  </td>
                   <td className="px-3 py-1.5">
                     {l.campaign_code ? <Badge variant="neutral">{l.campaign_code}</Badge> : "—"}
                   </td>
@@ -235,19 +262,6 @@ export function LeadsTable({ rows }: { rows: LeadTableRow[] }) {
                   <td className="px-3 py-1.5">
                     <div className="flex items-center justify-end gap-1">
                       <LeadHistoryDialog leadId={l.id} leadName={leadName} />
-                      <LeadDetailsDialog
-                        leadName={leadName}
-                        custom={l.custom as Record<string, unknown> | null}
-                        contact={{
-                          email: l.email,
-                          company_name: l.company_name,
-                          job_title: l.job_title,
-                          address_line1: l.address_line1,
-                          city: l.city,
-                          region: l.region,
-                          postcode: l.postcode,
-                        }}
-                      />
                       <EditLeadDialog lead={l} />
                     </div>
                   </td>
