@@ -20,7 +20,9 @@ export type NavIconName =
   | "Headset"
   | "Building2"
   | "Handshake"
-  | "PhoneCall";
+  | "PhoneCall"
+  | "UserCheck"
+  | "AlarmClock";
 
 export interface NavItem {
   href: string;
@@ -37,6 +39,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/performance", label: "Performance", icon: "BarChart3", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/activity", label: "Agent activity", icon: "PhoneCall", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/appointments", label: "Appointments", icon: "Handshake", roles: ["super_admin", "ops_manager", "team_lead"] },
+  { href: "/admin/warm-leads", label: "Warm leads", icon: "UserCheck", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/people", label: "People", icon: "Users", roles: ["super_admin", "ops_manager", "team_lead"] },
   { href: "/admin/campaigns", label: "Campaigns", icon: "Megaphone", roles: ["super_admin", "ops_manager"] },
   { href: "/admin/attendance", label: "Attendance", icon: "CalendarCheck", roles: ["super_admin", "ops_manager", "team_lead"] },
@@ -48,6 +51,7 @@ export const ADMIN_NAV: NavItem[] = [
 
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/workspace", label: "Dial workspace", icon: "Headset", roles: ["agent"] },
+  { href: "/workspace/followups", label: "Follow-ups", icon: "AlarmClock", roles: ["agent"] },
   { href: "/workspace/leads", label: "My leads", icon: "Users", roles: ["agent"] },
   { href: "/client", label: "Reports", icon: "Building2", roles: ["client_viewer"] },
   { href: "/qa", label: "QA queue", icon: "ShieldCheck", roles: ["qa"] },
