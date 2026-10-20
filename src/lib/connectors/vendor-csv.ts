@@ -57,14 +57,59 @@ export type VendorCsvFieldMap = Partial<
   >
 >;
 
+// sheet_to_json's object mode always treats row 1 as the header row. Any
+// hand-built sheet with a title above the table (very common — "D&P
+// Brothers - Developer Outreach Intel (researched 11 Oct 2026)" merged
+// across row 2, the real "Phone"/"Company"/... headers down in row 5) then
+// produces garbage column names: SheetJS auto-fills a blank header cell as
+// "__EMPTY"/"__EMPTY_1"/... and the title text itself becomes one giant
+// column name, so the real headers are never read at all and the phone
+// column can never be found. Detected here by scanning the first 20 rows
+// for the one with the most non-empty cells — a title/subtitle row has
+// exactly one long cell, a blank spacer row has none, and the real header
+// row is the only one with many short cells across most of the sheet's
+// width. Ties go to the earliest row, which keeps normal files (header
+// genuinely on row 1) behaving exactly as before.
+function findHeaderRowIndex(grid: unknown[][]): number {
+  const limit = Math.min(grid.length, 20);
+  let best = 0;
+  let bestCount = -1;
+  for (let i = 0; i < limit; i++) {
+    const row = grid[i] ?? [];
+    const nonEmpty = row.filter((v) => v !== null && v !== undefined && String(v).trim() !== "").length;
+    if (nonEmpty >= 2 && nonEmpty > bestCount) {
+      bestCount = nonEmpty;
+      best = i;
+    }
+  }
+  return bestCount === -1 ? 0 : best;
+}
+
 export function parseVendorFile(buffer: ArrayBuffer): {
   headers: string[];
   rows: Record<string, unknown>[];
 } {
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null });
-  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+
+  const grid = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null });
+  const headerRowIndex = findHeaderRowIndex(grid);
+  const headerRow = grid[headerRowIndex] ?? [];
+  const headers = headerRow.map((h, i) =>
+    h === null || h === undefined || String(h).trim() === "" ? `__EMPTY${i === 0 ? "" : `_${i}`}` : String(h).trim(),
+  );
+
+  const rows: Record<string, unknown>[] = [];
+  for (let r = headerRowIndex + 1; r < grid.length; r++) {
+    const rowArr = grid[r] ?? [];
+    if (rowArr.every((v) => v === null || v === undefined || v === "")) continue;
+    const obj: Record<string, unknown> = {};
+    headers.forEach((h, i) => {
+      obj[h] = rowArr[i] ?? null;
+    });
+    rows.push(obj);
+  }
+
   return { headers, rows };
 }
 
