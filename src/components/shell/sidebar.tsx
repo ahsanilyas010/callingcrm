@@ -19,6 +19,8 @@ import {
   Building2,
   Handshake,
   PhoneCall,
+  UserCheck,
+  AlarmClock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,8 @@ const ICON_MAP: Record<NavIconName, LucideIcon> = {
   Building2,
   Handshake,
   PhoneCall,
+  UserCheck,
+  AlarmClock,
 };
 
 // Per-icon (not per-position) colour so a given section always gets the
@@ -60,6 +64,8 @@ const ICON_COLOR: Record<NavIconName, { icon: string; active: string }> = {
   Building2: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
   Handshake: { icon: "text-brand-green-text", active: "bg-brand-green-tint text-brand-green-text" },
   PhoneCall: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
+  UserCheck: { icon: "text-brand-blue", active: "bg-brand-blue-tint text-brand-blue" },
+  AlarmClock: { icon: "text-brand-orange-text", active: "bg-brand-orange-tint text-brand-orange-text" },
 };
 
 export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {

@@ -2,6 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { notifyCloserOfAppointment } from "@/lib/actions/appointments";
+import { notifyScreenerOfWarmLead } from "@/lib/actions/warm-leads";
+
+// Dispositions that route a lead into the warm_leads screening queue
+// (see record_call_attempt() migration 46) — kept in sync with that SQL
+// CASE by hand, same as how the client-side "Book callback" UI condition
+// already has to track requires_followup.
+const WARM_LEAD_DISPOSITION_CODES = ["connected_interested", "interested_follow_up", "appointment_set"];
 
 export interface WorkspaceLead {
   id: string;
@@ -204,32 +211,34 @@ export async function submitCallAttempt(params: {
     }
   }
 
-  if (params.callbackAt) {
+  // record_call_attempt() now creates the followups row itself, atomically
+  // with the call log and leads.next_action_at — previously this was a
+  // separate client-side insert here that could silently fail (and
+  // diverge from next_action_at) after the RPC had already committed. See
+  // migration 46's header comment.
+
+  if (WARM_LEAD_DISPOSITION_CODES.includes(params.dispositionCode)) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      const { error: followupError } = await supabase.from("followups").insert({
-        lead_id: params.leadId,
-        campaign_id: params.campaignId,
-        assigned_to: user.id,
-        created_by: user.id,
-        followup_type: "callback",
-        due_at: params.callbackAt,
-        due_at_lead_local: params.callbackAt,
-        note: params.notes || null,
-      });
+      const { data: warmLead } = await supabase
+        .from("warm_leads")
+        .select("id")
+        .eq("lead_id", params.leadId)
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // The call itself is already committed by record_call_attempt, and
-      // the lead's next_action_at is set — so the callback isn't lost.
-      // But the follow-up tray would never show it, so say so rather than
-      // reporting a clean success the agent would take at face value.
-      if (followupError) {
-        return {
-          ok: true,
-          suppressed: params.dispositionCode === "connected_dnc",
-          warning: `Call logged and callback time saved, but it won't appear in your follow-up tray: ${followupError.message}`,
-        };
+      if (warmLead) {
+        const notifyResult = await notifyScreenerOfWarmLead(warmLead.id);
+        if (notifyResult.error) {
+          return {
+            ok: true,
+            warning: `Call logged, but the screener couldn't be notified by email: ${notifyResult.error}`,
+          };
+        }
       }
     }
   }

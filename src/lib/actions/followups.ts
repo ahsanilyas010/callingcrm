@@ -11,6 +11,7 @@ export interface ActionResult {
 export interface FollowupRow {
   id: string;
   lead_id: string;
+  campaign_id: string;
   followup_type: string;
   due_at: string;
   note: string | null;
@@ -29,8 +30,12 @@ export interface FollowupRow {
     region: string | null;
     postcode: string | null;
     custom: unknown;
+    attempt_count: number;
   } | null;
 }
+
+const FOLLOWUP_SELECT =
+  "id, lead_id, campaign_id, followup_type, due_at, note, priority, status, snooze_count, leads(first_name, last_name, phone_e164, email, company_name, job_title, address_line1, city, region, postcode, custom, attempt_count)";
 
 export async function getMyFollowups(): Promise<FollowupRow[]> {
   const supabase = await createClient();
@@ -41,14 +46,37 @@ export async function getMyFollowups(): Promise<FollowupRow[]> {
 
   const { data } = await supabase
     .from("followups")
-    .select(
-      "id, lead_id, followup_type, due_at, note, priority, status, snooze_count, leads(first_name, last_name, phone_e164, email, company_name, job_title, address_line1, city, region, postcode, custom)",
-    )
+    .select(FOLLOWUP_SELECT)
     .eq("assigned_to", user.id)
     .in("status", ["pending", "snoozed"])
     .order("due_at", { ascending: true })
     .limit(20);
 
+  return (data ?? []) as unknown as FollowupRow[];
+}
+
+// The tray's full-but-narrow slice (pending/snoozed, capped at 20) isn't
+// enough for a real management page — this is the same query opened up:
+// any status, no cap unless asked for. Kept as a separate function rather
+// than widening getMyFollowups() itself, since the tray's behaviour
+// (exactly pending/snoozed, exactly 20) must stay unchanged.
+export async function getMyFollowupsFull(opts: { statuses?: string[]; limit?: number } = {}): Promise<FollowupRow[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let query = supabase
+    .from("followups")
+    .select(FOLLOWUP_SELECT)
+    .eq("assigned_to", user.id)
+    .order("due_at", { ascending: false });
+
+  if (opts.statuses && opts.statuses.length > 0) query = query.in("status", opts.statuses);
+  if (opts.limit) query = query.limit(opts.limit);
+
+  const { data } = await query;
   return (data ?? []) as unknown as FollowupRow[];
 }
 

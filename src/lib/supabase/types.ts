@@ -852,6 +852,90 @@ export type Database = {
           },
         ]
       }
+      dnp_pm_tasks: {
+        Row: {
+          assigned_to: string | null
+          assignee_label: string
+          campaign_id: string
+          category: string
+          created_at: string
+          id: string
+          phase: string | null
+          resolved_at: string | null
+          source_followup_id: string | null
+          source_lead_id: string | null
+          status: string
+          task_date: string
+          task_text: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assignee_label: string
+          campaign_id: string
+          category: string
+          created_at?: string
+          id?: string
+          phase?: string | null
+          resolved_at?: string | null
+          source_followup_id?: string | null
+          source_lead_id?: string | null
+          status?: string
+          task_date?: string
+          task_text: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assignee_label?: string
+          campaign_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          phase?: string | null
+          resolved_at?: string | null
+          source_followup_id?: string | null
+          source_lead_id?: string | null
+          status?: string
+          task_date?: string
+          task_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dnp_pm_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dnp_pm_tasks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dnp_pm_tasks_source_followup_id_fkey"
+            columns: ["source_followup_id"]
+            isOneToOne: false
+            referencedRelation: "followups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dnp_pm_tasks_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dnp_pm_tasks_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_sends: {
         Row: {
           agent_id: string
@@ -2193,6 +2277,129 @@ export type Database = {
           },
         ]
       }
+      warm_lead_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["warm_lead_status"]
+          warm_lead_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          note?: string | null
+          status: Database["public"]["Enums"]["warm_lead_status"]
+          warm_lead_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["warm_lead_status"]
+          warm_lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warm_lead_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warm_lead_status_history_warm_lead_id_fkey"
+            columns: ["warm_lead_id"]
+            isOneToOne: false
+            referencedRelation: "warm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warm_leads: {
+        Row: {
+          agent_notes: string | null
+          assigned_screener_id: string | null
+          campaign_id: string
+          created_at: string
+          created_by: string
+          disposition_code: string
+          id: string
+          lead_id: string
+          reviewed_at: string | null
+          screener_notes: string | null
+          status: Database["public"]["Enums"]["warm_lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          agent_notes?: string | null
+          assigned_screener_id?: string | null
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          disposition_code: string
+          id?: string
+          lead_id: string
+          reviewed_at?: string | null
+          screener_notes?: string | null
+          status?: Database["public"]["Enums"]["warm_lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          agent_notes?: string | null
+          assigned_screener_id?: string | null
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          disposition_code?: string
+          id?: string
+          lead_id?: string
+          reviewed_at?: string | null
+          screener_notes?: string | null
+          status?: Database["public"]["Enums"]["warm_lead_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warm_leads_assigned_screener_id_fkey"
+            columns: ["assigned_screener_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warm_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warm_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warm_leads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warm_leads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialable_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mv_agent_scorecard_daily: {
@@ -2589,6 +2796,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_warm_lead_status: {
+        Args: {
+          p_note?: string
+          p_status: Database["public"]["Enums"]["warm_lead_status"]
+          p_warm_lead_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
@@ -2661,6 +2876,12 @@ export type Database = {
         | "invalid_number"
         | "duplicate_entity"
         | "vulnerable_person"
+      warm_lead_status:
+        | "pending"
+        | "in_review"
+        | "converted"
+        | "follow_up"
+        | "lost"
     }
     CompositeTypes: {
       agent_scorecard_row: {
@@ -2978,6 +3199,13 @@ export const Constants = {
         "invalid_number",
         "duplicate_entity",
         "vulnerable_person",
+      ],
+      warm_lead_status: [
+        "pending",
+        "in_review",
+        "converted",
+        "follow_up",
+        "lost",
       ],
     },
   },
